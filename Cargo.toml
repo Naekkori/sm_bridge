@@ -2,5 +2,11 @@
 name = "sm_bridge"
 version = "0.1.0"
 edition = "2024"
+description = "SevenMark Renderer And WYSIWYG Engine"
+license = "MIT"
+authors = ["Naekkori"]
 
 [dependencies]
+sevenmark-html = { path = "./crates/sevenmark-html" }
+sevenmark-parser = { path = "./crates/sevenmark-parser" }
+sevenmark-transform = { path = "./crates/sevenmark-transform" }
