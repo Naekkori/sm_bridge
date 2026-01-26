@@ -1,0 +1,42 @@
+[package]
+name = "sevenmark-transform"
+version = "2.12.22"
+authors = ["Levi Laine <shiueo.csh@gmail.com>"]
+license = "Apache-2.0"
+repository = "https://github.com/sevenwiki/sevenmark"
+edition = "2021"
+rust-version = "1.81.0"
+description = "sevenmark/transform"
+
+[dependencies]
+# Internal
+sevenmark-parser = { path = "../sevenmark-parser" }
+
+# Shared
+serde = { version = "1.0.228" }
+serde_json = "1.0.149"
+anyhow = "1.0.100"
+line-span = "0.1.5"
+tracing = { version = "0.1.44", optional = true }
+
+# WASM (optional)
+wasm-bindgen = { version = "0.2.106", optional = true }
+js-sys = { version = "0.3.83", optional = true }
+web-sys = { version = "0.3.83", optional = true }
+
+[features]
+default = []
+server = []
+wasm = [
+    "wasm-bindgen",
+    "js-sys",
+    "web-sys",
+    "sevenmark-parser/include_locations",
+]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[[test]]
+name = "monaco_tests"
+required-features = ["sevenmark-parser/include_locations"]
