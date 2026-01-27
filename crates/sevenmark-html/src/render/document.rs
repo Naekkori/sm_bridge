@@ -7,14 +7,14 @@ use crate::classes;
 use crate::config::RenderConfig;
 use crate::context::RenderContext;
 use crate::section::{Section, SectionTree, build_section_tree};
-use sevenmark_parser::ast::AstNode;
+use sevenmark_parser::ast::Element;
 
 /// Render a document to semantic HTML
 ///
 /// # Arguments
 /// * `ast` - The parsed AST elements
 /// * `config` - Render configuration
-pub fn render_document(ast: &[AstNode], config: &RenderConfig) -> String {
+pub fn render_document(ast: &[Element], config: &RenderConfig) -> String {
     let tree = build_section_tree(ast);
     let mut ctx = RenderContext::new(config);
     let content = render_section_tree(&tree, config, &mut ctx);

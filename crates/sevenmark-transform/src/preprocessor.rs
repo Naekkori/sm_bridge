@@ -4,7 +4,10 @@ use crate::wiki::{DocumentNamespace, SeaweedFsClient, fetch_documents_batch};
 use anyhow::Result;
 use sea_orm::DatabaseConnection;
 use serde::Serialize;
-use sevenmark_parser::ast::{AstNode, Location, MentionType, NodeKind, Traversable};
+use sevenmark_parser::ast::{
+    Element, ListContentItem, MentionType, Span, TableCellItem, TableRowItem, TextElement,
+    Traversable,
+};
 use sevenmark_parser::core::parse_document;
 use std::collections::{HashMap, HashSet};
 use tracing::{debug, warn};
@@ -55,13 +58,13 @@ pub struct PreProcessedDocument {
     pub references: HashSet<DocumentReference>,
     /// User mention UUIDs collected from the document
     pub user_mentions: HashSet<String>,
-    pub ast: Vec<AstNode>,
+    pub ast: Vec<Element>,
     pub sections: Vec<SectionInfo>,
 }
 
 /// Processes document with 1-depth include resolution
 pub async fn preprocess_sevenmark(
-    mut ast: Vec<AstNode>,
+    mut ast: Vec<Element>,
     db: &DatabaseConnection,
     seaweedfs: &SeaweedFsClient,
 ) -> Result<PreProcessedDocument> {
@@ -87,12 +90,11 @@ pub async fn preprocess_sevenmark(
     );
 
     // Collect unique includes for fetching (only Include elements need content fetching)
-    // This also serves as references from the main document (before substitution overwrites content)
     let mut includes_to_fetch = HashSet::new();
     collect_includes(&ast, &mut includes_to_fetch);
 
     if !includes_to_fetch.is_empty() {
-        // Prepare batch fetch requests (convert DocumentReference to tuple for API)
+        // Prepare batch fetch requests
         let requests: Vec<_> = includes_to_fetch
             .iter()
             .map(|r| (r.namespace.clone(), r.title.clone()))
@@ -104,7 +106,7 @@ pub async fn preprocess_sevenmark(
         let fetched_docs = fetch_documents_batch(db, seaweedfs, requests).await?;
 
         // Parse fetched documents and store in map
-        let mut docs_map: HashMap<String, Vec<AstNode>> = HashMap::new();
+        let mut docs_map: HashMap<String, Vec<Element>> = HashMap::new();
 
         for doc in fetched_docs {
             let doc_key = format!("{}:{}", namespace_to_string(&doc.namespace), doc.title);
@@ -116,9 +118,7 @@ pub async fn preprocess_sevenmark(
         substitute_includes(&mut ast, &docs_map, &mut all_media);
     }
 
-    // Collect all references from final AST (after include substitution)
-    // Start with includes_to_fetch (main document's direct includes, collected before substitution)
-    // Then add references from included content (2+ depth includes, categories, media from included docs)
+    // Collect all references from final AST
     let mut all_references = includes_to_fetch;
     collect_references(&ast, &mut all_references);
 
@@ -134,15 +134,12 @@ pub async fn preprocess_sevenmark(
 }
 
 /// Define과 If를 문서 순서대로 처리 (single pass, in-place)
-/// - Define을 만나면 변수 등록
-/// - Variable을 만나면 치환
-/// - If를 만나면 조건 평가 후 전개/제거
-fn process_defines_and_ifs(elements: &mut Vec<AstNode>, variables: &mut HashMap<String, String>) {
+fn process_defines_and_ifs(elements: &mut Vec<Element>, variables: &mut HashMap<String, String>) {
     let mut i = 0;
     while i < elements.len() {
         // 1. Define: 변수 등록
-        if let NodeKind::Define { parameters } = &elements[i].kind {
-            for (key, param) in parameters {
+        if let Element::Define(define_elem) = &elements[i] {
+            for (key, param) in &define_elem.parameters {
                 let value = extract_plain_text(&param.value);
                 if !value.is_empty() {
                     variables.insert(key.clone(), value);
@@ -153,28 +150,22 @@ fn process_defines_and_ifs(elements: &mut Vec<AstNode>, variables: &mut HashMap<
         }
 
         // 2. Variable: 치환
-        if let NodeKind::Variable { name } = &elements[i].kind {
-            if let Some(value) = variables.get(name) {
-                elements[i] = AstNode::new(
-                    Location::synthesized(),
-                    NodeKind::Text {
-                        value: value.clone(),
-                    },
-                );
+        if let Element::Variable(var_elem) = &elements[i] {
+            if let Some(value) = variables.get(&var_elem.name) {
+                elements[i] = Element::Text(TextElement {
+                    span: Span::synthesized(),
+                    value: value.clone(),
+                });
             }
             i += 1;
             continue;
         }
 
         // 3. If: 조건 평가 후 전개/제거
-        if let NodeKind::If {
-            condition,
-            children,
-        } = &elements[i].kind
-        {
-            if evaluate_condition(condition, variables) {
+        if let Element::If(if_elem) = &elements[i] {
+            if evaluate_condition(&if_elem.condition, variables) {
                 // 조건 true: 내용으로 대체 후 같은 위치부터 재처리
-                let content = children.clone();
+                let content = if_elem.children.clone();
                 elements.splice(i..i + 1, content);
             } else {
                 // 조건 false: 제거
@@ -184,15 +175,15 @@ fn process_defines_and_ifs(elements: &mut Vec<AstNode>, variables: &mut HashMap<
         }
 
         // 4. Table: 테이블 내부 조건부 처리
-        if let NodeKind::Table { children, .. } = &mut elements[i].kind {
-            process_table_conditionals(children, variables);
+        if let Element::Table(table_elem) = &mut elements[i] {
+            process_table_conditionals(&mut table_elem.children, variables);
             i += 1;
             continue;
         }
 
         // 5. List: 리스트 내부 조건부 처리
-        if let NodeKind::List { children, .. } = &mut elements[i].kind {
-            process_list_conditionals(children, variables);
+        if let Element::List(list_elem) = &mut elements[i] {
+            process_list_conditionals(&mut list_elem.children, variables);
             i += 1;
             continue;
         }
@@ -207,7 +198,7 @@ fn process_defines_and_ifs(elements: &mut Vec<AstNode>, variables: &mut HashMap<
 }
 
 fn collect_metadata(
-    elements: &[AstNode],
+    elements: &[Element],
     categories: &mut HashSet<String>,
     redirect: &mut Option<RedirectReference>,
     media: &mut HashSet<MediaReference>,
@@ -241,7 +232,7 @@ fn collect_metadata(
 
 #[allow(clippy::too_many_arguments)]
 fn collect_metadata_recursive(
-    element: &AstNode,
+    element: &Element,
     categories: &mut HashSet<String>,
     redirect: &mut Option<RedirectReference>,
     media: &mut HashSet<MediaReference>,
@@ -251,19 +242,16 @@ fn collect_metadata_recursive(
     max_end: &mut usize,
     collect_categories_redirect: bool,
 ) {
-    // Track max location.end for document length
-    if element.location.end > *max_end {
-        *max_end = element.location.end;
+    // Track max span.end for document length
+    let span = element.span();
+    if span.end > *max_end {
+        *max_end = span.end;
     }
 
-    match &element.kind {
-        NodeKind::Header {
-            level,
-            section_index,
-            ..
-        } => {
-            let start = element.location.start;
-            let level = *level;
+    match element {
+        Element::Header(header) => {
+            let start = span.start;
+            let level = header.level;
 
             // Pop headers with level >= current (same or lower priority)
             while let Some(mut section) = section_stack.pop() {
@@ -277,15 +265,15 @@ fn collect_metadata_recursive(
             }
 
             section_stack.push(SectionInfo {
-                section_index: *section_index,
+                section_index: header.section_index,
                 level,
                 start,
                 end: 0,
             });
         }
-        NodeKind::Media { parameters, .. } => {
+        Element::Media(media_elem) => {
             // Collect #file parameter
-            if let Some(file_param) = parameters.get("file") {
+            if let Some(file_param) = media_elem.parameters.get("file") {
                 let title = extract_plain_text(&file_param.value);
                 if !title.is_empty() {
                     media.insert(MediaReference {
@@ -295,7 +283,7 @@ fn collect_metadata_recursive(
                 }
             }
             // Collect #document parameter
-            if let Some(doc_param) = parameters.get("document") {
+            if let Some(doc_param) = media_elem.parameters.get("document") {
                 let title = extract_plain_text(&doc_param.value);
                 if !title.is_empty() {
                     media.insert(MediaReference {
@@ -305,7 +293,7 @@ fn collect_metadata_recursive(
                 }
             }
             // Collect #category parameter
-            if let Some(cat_param) = parameters.get("category") {
+            if let Some(cat_param) = media_elem.parameters.get("category") {
                 let title = extract_plain_text(&cat_param.value);
                 if !title.is_empty() {
                     media.insert(MediaReference {
@@ -314,22 +302,18 @@ fn collect_metadata_recursive(
                     });
                 }
             }
-            // #url parameter is ignored (already a complete URL, no need to fetch)
         }
-        NodeKind::Category { children } if collect_categories_redirect => {
-            let name = extract_plain_text(children);
+        Element::Category(cat_elem) if collect_categories_redirect => {
+            let name = extract_plain_text(&cat_elem.children);
             if !name.is_empty() {
                 categories.insert(name);
             }
         }
-        NodeKind::Redirect {
-            parameters,
-            children,
-        } if collect_categories_redirect => {
-            let title = extract_plain_text(children);
+        Element::Redirect(redirect_elem) if collect_categories_redirect => {
+            let title = extract_plain_text(&redirect_elem.children);
             if !title.is_empty() && redirect.is_none() {
-                // Read namespace from parameters (same as Include)
-                let namespace_str = parameters
+                let namespace_str = redirect_elem
+                    .parameters
                     .get("namespace")
                     .map(|param| extract_plain_text(&param.value))
                     .filter(|s: &String| !s.is_empty())
@@ -338,8 +322,8 @@ fn collect_metadata_recursive(
                 *redirect = Some(RedirectReference { namespace, title });
             }
         }
-        NodeKind::Mention { kind, id } if *kind == MentionType::User => {
-            user_mentions.insert(id.clone());
+        Element::Mention(mention_elem) if mention_elem.kind == MentionType::User => {
+            user_mentions.insert(mention_elem.id.clone());
         }
         _ => {}
     }
@@ -359,21 +343,18 @@ fn collect_metadata_recursive(
     });
 }
 
-fn collect_includes(elements: &[AstNode], includes: &mut HashSet<DocumentReference>) {
+fn collect_includes(elements: &[Element], includes: &mut HashSet<DocumentReference>) {
     for element in elements {
         collect_includes_recursive(element, includes);
     }
 }
 
-fn collect_includes_recursive(element: &AstNode, includes: &mut HashSet<DocumentReference>) {
-    if let NodeKind::Include {
-        parameters,
-        children,
-    } = &element.kind
-    {
-        let title = extract_plain_text(children);
+fn collect_includes_recursive(element: &Element, includes: &mut HashSet<DocumentReference>) {
+    if let Element::Include(include_elem) = element {
+        let title = extract_plain_text(&include_elem.children);
         if !title.is_empty() {
-            let namespace_str = parameters
+            let namespace_str = include_elem
+                .parameters
                 .get("namespace")
                 .map(|param| extract_plain_text(&param.value))
                 .filter(|s: &String| !s.is_empty())
@@ -389,18 +370,16 @@ fn collect_includes_recursive(element: &AstNode, includes: &mut HashSet<Document
 }
 
 /// Collect all document references from AST
-/// This should be called after substitute_includes() to capture references from included documents
-fn collect_references(elements: &[AstNode], references: &mut HashSet<DocumentReference>) {
+fn collect_references(elements: &[Element], references: &mut HashSet<DocumentReference>) {
     for element in elements {
         collect_references_recursive(element, references);
     }
 }
 
-fn collect_references_recursive(element: &AstNode, references: &mut HashSet<DocumentReference>) {
-    match &element.kind {
-        // {{{#category}}} 요소
-        NodeKind::Category { children } => {
-            let name = extract_plain_text(children);
+fn collect_references_recursive(element: &Element, references: &mut HashSet<DocumentReference>) {
+    match element {
+        Element::Category(cat_elem) => {
+            let name = extract_plain_text(&cat_elem.children);
             if !name.is_empty() {
                 references.insert(DocumentReference {
                     namespace: DocumentNamespace::Category,
@@ -408,9 +387,8 @@ fn collect_references_recursive(element: &AstNode, references: &mut HashSet<Docu
                 });
             }
         }
-        // Media의 file/document/category 파라미터
-        NodeKind::Media { parameters, .. } => {
-            if let Some(file_param) = parameters.get("file") {
+        Element::Media(media_elem) => {
+            if let Some(file_param) = media_elem.parameters.get("file") {
                 let title = extract_plain_text(&file_param.value);
                 if !title.is_empty() {
                     references.insert(DocumentReference {
@@ -419,7 +397,7 @@ fn collect_references_recursive(element: &AstNode, references: &mut HashSet<Docu
                     });
                 }
             }
-            if let Some(doc_param) = parameters.get("document") {
+            if let Some(doc_param) = media_elem.parameters.get("document") {
                 let title = extract_plain_text(&doc_param.value);
                 if !title.is_empty() {
                     references.insert(DocumentReference {
@@ -428,7 +406,7 @@ fn collect_references_recursive(element: &AstNode, references: &mut HashSet<Docu
                     });
                 }
             }
-            if let Some(cat_param) = parameters.get("category") {
+            if let Some(cat_param) = media_elem.parameters.get("category") {
                 let title = extract_plain_text(&cat_param.value);
                 if !title.is_empty() {
                     references.insert(DocumentReference {
@@ -447,8 +425,8 @@ fn collect_references_recursive(element: &AstNode, references: &mut HashSet<Docu
 }
 
 fn substitute_includes(
-    elements: &mut [AstNode],
-    docs_map: &HashMap<String, Vec<AstNode>>,
+    elements: &mut [Element],
+    docs_map: &HashMap<String, Vec<Element>>,
     all_media: &mut HashSet<MediaReference>,
 ) {
     for element in elements {
@@ -457,18 +435,15 @@ fn substitute_includes(
 }
 
 fn substitute_includes_recursive(
-    element: &mut AstNode,
-    docs_map: &HashMap<String, Vec<AstNode>>,
+    element: &mut Element,
+    docs_map: &HashMap<String, Vec<Element>>,
     all_media: &mut HashSet<MediaReference>,
 ) {
-    if let NodeKind::Include {
-        parameters,
-        children,
-    } = &mut element.kind
-    {
-        let title = extract_plain_text(children);
+    if let Element::Include(include_elem) = element {
+        let title = extract_plain_text(&include_elem.children);
         if !title.is_empty() {
-            let namespace_str = parameters
+            let namespace_str = include_elem
+                .parameters
                 .get("namespace")
                 .map(|param| extract_plain_text(&param.value))
                 .filter(|s: &String| !s.is_empty())
@@ -481,7 +456,8 @@ fn substitute_includes_recursive(
                 let mut included_ast = base_ast.clone();
 
                 // Create parameter map from include parameters (excluding namespace)
-                let mut params_map: HashMap<String, String> = parameters
+                let mut params_map: HashMap<String, String> = include_elem
+                    .parameters
                     .iter()
                     .filter(|(k, _)| k.as_str() != "namespace")
                     .map(|(k, v)| (k.clone(), extract_plain_text(&v.value)))
@@ -490,7 +466,7 @@ fn substitute_includes_recursive(
                 // Process defines and ifs (include parameters have priority)
                 process_defines_and_ifs(&mut included_ast, &mut params_map);
 
-                // Collect media from included document (sections and user_mentions ignored for includes)
+                // Collect media from included document
                 let mut categories = HashSet::new();
                 let mut redirect = None;
                 let mut ignored_sections = Vec::new();
@@ -506,7 +482,7 @@ fn substitute_includes_recursive(
                 );
 
                 // Replace include content
-                *children = included_ast;
+                include_elem.children = included_ast;
                 return;
             } else {
                 warn!("Include target not found: {}", doc_key);
@@ -538,31 +514,30 @@ fn namespace_to_string(namespace: &DocumentNamespace) -> &'static str {
 }
 
 /// Table 내부의 행/셀 레벨 조건부 처리
-fn process_table_conditionals(rows: &mut Vec<AstNode>, variables: &mut HashMap<String, String>) {
+fn process_table_conditionals(
+    rows: &mut Vec<TableRowItem>,
+    variables: &mut HashMap<String, String>,
+) {
     let mut i = 0;
     while i < rows.len() {
-        match &mut rows[i].kind {
-            NodeKind::TableRow { children, .. } => {
+        match &mut rows[i] {
+            TableRowItem::Row(row) => {
                 // 행 내부의 셀 레벨 조건부 처리
-                process_table_cell_conditionals(children, variables);
+                process_table_cell_conditionals(&mut row.children, variables);
                 i += 1;
             }
-            NodeKind::ConditionalTableRows {
-                condition,
-                children,
-            } => {
-                if evaluate_condition(condition, variables) {
-                    // 조건이 true: rows를 펼침 (처리는 펼친 후 루프에서)
-                    let expanded = std::mem::take(children);
+            TableRowItem::Conditional(cond) => {
+                if evaluate_condition(&cond.condition, variables) {
+                    // 조건이 true: rows를 펼침
+                    let expanded: Vec<TableRowItem> = std::mem::take(&mut cond.rows)
+                        .into_iter()
+                        .map(TableRowItem::Row)
+                        .collect();
                     rows.splice(i..i + 1, expanded);
-                    // i 유지 → 다음 반복에서 TableRow로 처리됨
                 } else {
                     // 조건이 false: 제거
                     rows.remove(i);
                 }
-            }
-            _ => {
-                i += 1;
             }
         }
     }
@@ -570,64 +545,59 @@ fn process_table_conditionals(rows: &mut Vec<AstNode>, variables: &mut HashMap<S
 
 /// 테이블 셀 레벨 조건부 처리
 fn process_table_cell_conditionals(
-    cells: &mut Vec<AstNode>,
+    cells: &mut Vec<TableCellItem>,
     variables: &mut HashMap<String, String>,
 ) {
     let mut i = 0;
     while i < cells.len() {
-        match &mut cells[i].kind {
-            NodeKind::TableCell { children, .. } => {
+        match &mut cells[i] {
+            TableCellItem::Cell(cell) => {
                 // 셀 내부 처리 (define/if 포함)
-                process_defines_and_ifs(children, variables);
+                process_defines_and_ifs(&mut cell.children, variables);
                 i += 1;
             }
-            NodeKind::ConditionalTableCells {
-                condition,
-                children,
-            } => {
-                if evaluate_condition(condition, variables) {
-                    // 조건이 true: cells를 펼침 (처리는 펼친 후 루프에서)
-                    let expanded = std::mem::take(children);
+            TableCellItem::Conditional(cond) => {
+                if evaluate_condition(&cond.condition, variables) {
+                    // 조건이 true: cells를 펼침
+                    let expanded: Vec<TableCellItem> = std::mem::take(&mut cond.cells)
+                        .into_iter()
+                        .map(TableCellItem::Cell)
+                        .collect();
                     cells.splice(i..i + 1, expanded);
-                    // i 유지 → 다음 반복에서 TableCell로 처리됨
                 } else {
                     // 조건이 false: 제거
                     cells.remove(i);
                 }
-            }
-            _ => {
-                i += 1;
             }
         }
     }
 }
 
 /// List 내부의 아이템 레벨 조건부 처리
-fn process_list_conditionals(items: &mut Vec<AstNode>, variables: &mut HashMap<String, String>) {
+fn process_list_conditionals(
+    items: &mut Vec<ListContentItem>,
+    variables: &mut HashMap<String, String>,
+) {
     let mut i = 0;
     while i < items.len() {
-        match &mut items[i].kind {
-            NodeKind::ListItem { children, .. } => {
+        match &mut items[i] {
+            ListContentItem::Item(item) => {
                 // 아이템 내부 처리 (define/if 포함)
-                process_defines_and_ifs(children, variables);
+                process_defines_and_ifs(&mut item.children, variables);
                 i += 1;
             }
-            NodeKind::ConditionalListItems {
-                condition,
-                children,
-            } => {
-                if evaluate_condition(condition, variables) {
-                    // 조건이 true: items를 펼침 (처리는 펼친 후 루프에서)
-                    let expanded = std::mem::take(children);
+            ListContentItem::Conditional(cond) => {
+                if evaluate_condition(&cond.condition, variables) {
+                    // 조건이 true: items를 펼침
+                    let expanded: Vec<ListContentItem> = std::mem::take(&mut cond.items)
+                        .into_iter()
+                        .map(ListContentItem::Item)
+                        .collect();
                     items.splice(i..i + 1, expanded);
-                    // i 유지 → 다음 반복에서 ListItem으로 처리됨
                 } else {
                     // 조건이 false: 제거
                     items.remove(i);
                 }
-            }
-            _ => {
-                i += 1;
             }
         }
     }

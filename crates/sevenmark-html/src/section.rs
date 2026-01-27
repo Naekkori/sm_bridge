@@ -3,7 +3,7 @@
 //! Converts flat AST into a tree structure where headers with higher level
 //! numbers are children of headers with lower level numbers.
 
-use sevenmark_parser::ast::{AstNode, NodeKind};
+use sevenmark_parser::ast::Element;
 
 /// A section in the document tree
 #[derive(Debug)]
@@ -15,11 +15,11 @@ pub struct Section<'a> {
     /// Header section index
     pub header_section_index: usize,
     /// Header children
-    pub header_children: &'a [AstNode],
+    pub header_children: &'a [Element],
     /// Hierarchical path (e.g., "1", "1.1", "1.2.3")
     pub section_path: String,
     /// Content elements before first child section
-    pub content: Vec<&'a AstNode>,
+    pub content: Vec<&'a Element>,
     /// Nested child sections
     pub children: Vec<Section<'a>>,
 }
@@ -28,20 +28,20 @@ pub struct Section<'a> {
 #[derive(Debug)]
 pub struct SectionTree<'a> {
     /// Content before the first header
-    pub preamble: Vec<&'a AstNode>,
+    pub preamble: Vec<&'a Element>,
     /// Top-level sections
     pub sections: Vec<Section<'a>>,
 }
 
 /// Check if an element is a Header and return its info
-fn as_header(el: &AstNode) -> Option<(usize, bool, usize, &[AstNode])> {
-    match &el.kind {
-        NodeKind::Header {
-            level,
-            is_folded,
-            section_index,
-            children,
-        } => Some((*level, *is_folded, *section_index, children)),
+fn as_header(el: &Element) -> Option<(usize, bool, usize, &[Element])> {
+    match el {
+        Element::Header(header) => Some((
+            header.level,
+            header.is_folded,
+            header.section_index,
+            &header.children,
+        )),
         _ => None,
     }
 }
@@ -50,7 +50,7 @@ fn as_header(el: &AstNode) -> Option<(usize, bool, usize, &[AstNode])> {
 ///
 /// Headers with higher level numbers are children of headers with lower level numbers.
 /// For example, H2 (level=2) is a child of H1 (level=1).
-pub fn build_section_tree(elements: &[AstNode]) -> SectionTree<'_> {
+pub fn build_section_tree(elements: &[Element]) -> SectionTree<'_> {
     let mut preamble = Vec::new();
     let mut sections = Vec::new();
     let mut i = 0;
@@ -81,7 +81,7 @@ pub fn build_section_tree(elements: &[AstNode]) -> SectionTree<'_> {
 ///
 /// Returns the section and the next index to process, or None if no section starts here.
 fn build_section(
-    elements: &[AstNode],
+    elements: &[Element],
     start_index: usize,
     min_level: usize,
     section_path: String,
@@ -141,27 +141,23 @@ fn build_section(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use sevenmark_parser::ast::Location;
+    use sevenmark_parser::ast::{HeaderElement, Span, TextElement};
 
-    fn text(s: &str) -> AstNode {
-        AstNode::new(
-            Location::synthesized(),
-            NodeKind::Text {
-                value: s.to_string(),
-            },
-        )
+    fn text(s: &str) -> Element {
+        Element::Text(TextElement {
+            span: Span::synthesized(),
+            value: s.to_string(),
+        })
     }
 
-    fn header(level: usize, section_index: usize) -> AstNode {
-        AstNode::new(
-            Location::synthesized(),
-            NodeKind::Header {
-                level,
-                is_folded: false,
-                section_index,
-                children: vec![],
-            },
-        )
+    fn header(level: usize, section_index: usize) -> Element {
+        Element::Header(HeaderElement {
+            span: Span::synthesized(),
+            level,
+            is_folded: false,
+            section_index,
+            children: vec![],
+        })
     }
 
     #[test]

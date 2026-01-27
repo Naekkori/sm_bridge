@@ -1,7 +1,7 @@
 //! Header rendering
 
 use maud::{Markup, html};
-use sevenmark_parser::ast::AstNode;
+use sevenmark_parser::ast::Element;
 
 use crate::classes;
 use crate::config::RenderConfig;
@@ -12,7 +12,7 @@ use crate::render::render_elements;
 pub fn render_with_path(
     level: usize,
     section_index: usize,
-    children: &[AstNode],
+    children: &[Element],
     section_path: &str,
     config: &RenderConfig,
     ctx: &mut RenderContext,

@@ -19,4 +19,4 @@ mod utils;
 
 pub type InputSource<'i> = LocatingSlice<&'i str>;
 
-pub type ParserInput<'i> = Stateful<InputSource<'i>, ParseContext>;
+pub type ParserInput<'i> = Stateful<InputSource<'i>, ParseContext<'i>>;

@@ -1,37 +1,18 @@
-pub mod position_converter;
-pub use position_converter::*;
+pub mod utf16_offset_converter;
 
-#[cfg(feature = "server")]
-pub mod utils;
-
-#[cfg(feature = "server")]
-pub mod expression_evaluator;
-#[cfg(feature = "server")]
-pub mod postprocessor;
-#[cfg(feature = "server")]
-pub mod preprocessor;
-#[cfg(feature = "server")]
-pub mod processor;
-#[cfg(feature = "server")]
-pub mod wiki;
-
-#[cfg(feature = "server")]
-pub use postprocessor::*;
-#[cfg(feature = "server")]
-pub use preprocessor::*;
-#[cfg(feature = "server")]
-pub use processor::*;
+pub use utf16_offset_converter::*;
 
 #[cfg(feature = "wasm")]
 use wasm_bindgen::prelude::*;
 
+/// Parse sevenmark to AST with UTF-16 absolute offsets (for CodeMirror 6)
 #[cfg(feature = "wasm")]
 #[wasm_bindgen]
-pub fn parse_sevenmark_to_monaco(input: &str) -> String {
+pub fn parse_sevenmark_to_codemirror(input: &str) -> String {
     use sevenmark_parser::core::parse_document;
 
     let elements = parse_document(input);
-    convert_ast_to_line_column_json(&elements, input)
+    convert_ast_to_utf16_offset_json(&elements, input)
 }
 
 /// Parse sevenmark to AST with byte offsets (for section editing)

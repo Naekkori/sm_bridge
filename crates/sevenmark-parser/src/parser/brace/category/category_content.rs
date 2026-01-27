@@ -1,6 +1,6 @@
 use super::category_text::category_text_parser;
 
-use crate::ast::AstNode;
+use crate::ast::Element;
 use crate::parser::ParserInput;
 use crate::parser::escape::escape_parser;
 use crate::parser::token::{token_brace_close_parser, token_brace_open_parser};
@@ -8,7 +8,7 @@ use winnow::Result;
 use winnow::combinator::{alt, repeat};
 use winnow::prelude::*;
 
-pub fn category_content_parser(parser_input: &mut ParserInput) -> Result<Vec<AstNode>> {
+pub fn category_content_parser(parser_input: &mut ParserInput) -> Result<Vec<Element>> {
     repeat(
         1..,
         alt((

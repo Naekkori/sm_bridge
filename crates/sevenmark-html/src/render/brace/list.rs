@@ -1,7 +1,7 @@
 //! List rendering
 
 use maud::{Markup, html};
-use sevenmark_parser::ast::{AstNode, NodeKind, Parameters};
+use sevenmark_parser::ast::{ListContentItem, Parameters};
 
 use crate::classes;
 use crate::context::RenderContext;
@@ -10,7 +10,7 @@ use crate::render::{render_elements, utils};
 pub fn render(
     kind: &str,
     parameters: &Parameters,
-    children: &[AstNode],
+    children: &[ListContentItem],
     ctx: &mut RenderContext,
 ) -> Markup {
     ctx.enter_suppress_soft_breaks();
@@ -28,23 +28,20 @@ pub fn render(
     }
 }
 
-fn render_items(items: &[AstNode], ctx: &mut RenderContext) -> Markup {
+fn render_items(items: &[ListContentItem], ctx: &mut RenderContext) -> Markup {
     html! {
         @for item in items {
-            @match &item.kind {
-                NodeKind::ListItem { parameters, children } => {
-                    @let style = utils::build_style(parameters);
-                    li style=[style] { (render_elements(children, ctx)) }
+            @match item {
+                ListContentItem::Item(list_item) => {
+                    @let style = utils::build_style(&list_item.parameters);
+                    li style=[style] { (render_elements(&list_item.children, ctx)) }
                 }
-                NodeKind::ConditionalListItems { children, .. } => {
-                    @for list_item in children {
-                        @if let NodeKind::ListItem { parameters, children } = &list_item.kind {
-                            @let style = utils::build_style(parameters);
-                            li style=[style] { (render_elements(children, ctx)) }
-                        }
+                ListContentItem::Conditional(cond) => {
+                    @for list_item in &cond.items {
+                        @let style = utils::build_style(&list_item.parameters);
+                        li style=[style] { (render_elements(&list_item.children, ctx)) }
                     }
                 }
-                _ => {}
             }
         }
     }

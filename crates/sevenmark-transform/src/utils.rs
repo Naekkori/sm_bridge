@@ -1,12 +1,12 @@
-use sevenmark_parser::ast::{AstNode, NodeKind};
+use sevenmark_parser::ast::Element;
 
-/// Extract plain text content from a slice of AstNodes
-pub fn extract_plain_text(elements: &[AstNode]) -> String {
+/// Extract plain text content from a slice of Elements
+pub fn extract_plain_text(elements: &[Element]) -> String {
     elements
         .iter()
-        .filter_map(|element| match &element.kind {
-            NodeKind::Text { value } => Some(value.as_str()),
-            NodeKind::Escape { value } => Some(value.as_str()),
+        .filter_map(|element| match element {
+            Element::Text(text) => Some(text.value.as_str()),
+            Element::Escape(escape) => Some(escape.value.as_str()),
             _ => None,
         })
         .collect::<String>()

@@ -1,12 +1,12 @@
 //! BlockQuote rendering
 
 use maud::{Markup, html};
-use sevenmark_parser::ast::{AstNode, Parameters};
+use sevenmark_parser::ast::{Element, Parameters};
 
 use crate::context::RenderContext;
 use crate::render::{render_elements, utils};
 
-pub fn render(parameters: &Parameters, children: &[AstNode], ctx: &mut RenderContext) -> Markup {
+pub fn render(parameters: &Parameters, children: &[Element], ctx: &mut RenderContext) -> Markup {
     ctx.enter_suppress_soft_breaks();
     let content = render_elements(children, ctx);
     ctx.exit_suppress_soft_breaks();

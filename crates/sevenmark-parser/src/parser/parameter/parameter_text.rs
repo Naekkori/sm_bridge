@@ -1,4 +1,4 @@
-use crate::ast::{AstNode, Location, NodeKind};
+use crate::ast::{Element, Span, TextElement};
 use crate::parser::ParserInput;
 use winnow::Result;
 use winnow::prelude::*;
@@ -8,17 +8,15 @@ use winnow::token::take_while;
 /// Parse plain text content within parameter values
 /// Reads all characters except for quotes ("), (\[), (\]) and backslashes (\)
 /// which are handled by escape sequences or mark the end of parameter values
-pub fn parameter_text_parser(parser_input: &mut ParserInput) -> Result<AstNode> {
-    let start = parser_input.input.current_token_start();
+pub fn parameter_text_parser(parser_input: &mut ParserInput) -> Result<Element> {
+    let start = parser_input.current_token_start();
     // Take all characters except quotes and backslashes
     let parsed_content =
         take_while(1.., |c: char| !matches!(c, '"' | '\\' | '[' | ']')).parse_next(parser_input)?;
-    let end = parser_input.input.previous_token_end();
+    let end = parser_input.previous_token_end();
 
-    Ok(AstNode::new(
-        Location { start, end },
-        NodeKind::Text {
-            value: parsed_content.to_string(),
-        },
-    ))
+    Ok(Element::Text(TextElement {
+        span: Span { start, end },
+        value: parsed_content.to_string(),
+    }))
 }

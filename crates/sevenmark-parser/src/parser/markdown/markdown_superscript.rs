@@ -1,4 +1,4 @@
-use crate::ast::{AstNode, Location, NodeKind};
+use crate::ast::{Element, Span, TextStyleElement};
 use crate::parser::ParserInput;
 use crate::parser::element::element_parser;
 use crate::parser::utils::with_depth;
@@ -8,11 +8,11 @@ use winnow::prelude::*;
 use winnow::stream::Location as StreamLocation;
 use winnow::token::literal;
 
-pub fn markdown_superscript_parser(parser_input: &mut ParserInput) -> Result<AstNode> {
+pub fn markdown_superscript_parser(parser_input: &mut ParserInput) -> Result<Element> {
     if parser_input.state.inside_superscript {
         return Err(winnow::error::ContextError::new());
     }
-    let start = parser_input.input.current_token_start();
+    let start = parser_input.current_token_start();
     let parsed_content = delimited(
         literal("^^"),
         |input: &mut ParserInput| {
@@ -24,12 +24,10 @@ pub fn markdown_superscript_parser(parser_input: &mut ParserInput) -> Result<Ast
         literal("^^"),
     )
     .parse_next(parser_input)?;
-    let end = parser_input.input.previous_token_end();
+    let end = parser_input.previous_token_end();
 
-    Ok(AstNode::new(
-        Location { start, end },
-        NodeKind::Superscript {
-            children: parsed_content,
-        },
-    ))
+    Ok(Element::Superscript(TextStyleElement {
+        span: Span { start, end },
+        children: parsed_content,
+    }))
 }

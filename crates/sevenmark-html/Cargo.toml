@@ -1,18 +1,16 @@
 [package]
 name = "sevenmark-html"
-version = "2.13.1"
-authors = ["Levi Laine <shiueo.csh@gmail.com>"]
-license = "Apache-2.0"
-repository = "https://github.com/sevenwiki/sevenmark"
-edition = "2021"
-rust-version = "1.81.0"
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+edition.workspace = true
+rust-version.workspace = true
 description = "HTML renderer for SevenMark AST"
 
 [dependencies]
 # Internal
-sevenmark-parser = { path = "../sevenmark-parser" }
+sevenmark-parser = { workspace = true }
 
 # HTML rendering
-maud = "0.27.0"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
+maud = { workspace = true }

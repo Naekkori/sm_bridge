@@ -1,4 +1,4 @@
-use crate::ast::{AstNode, Location, NodeKind};
+use crate::ast::{Element, RedirectElement, Span};
 use crate::parser::ParserInput;
 use crate::parser::brace::redirect::redirect_content_parser;
 use crate::parser::parameter::parameter_core_parser;
@@ -10,8 +10,8 @@ use winnow::prelude::*;
 use winnow::stream::Location as StreamLocation;
 use winnow::token::literal;
 
-pub fn brace_redirect_parser(parser_input: &mut ParserInput) -> Result<AstNode> {
-    let start = parser_input.input.current_token_start();
+pub fn brace_redirect_parser(parser_input: &mut ParserInput) -> Result<Element> {
+    let start = parser_input.current_token_start();
 
     let ((parameters, _), parsed_content) = delimited(
         literal("{{{#redirect"),
@@ -23,13 +23,11 @@ pub fn brace_redirect_parser(parser_input: &mut ParserInput) -> Result<AstNode> 
     )
     .parse_next(parser_input)?;
 
-    let end = parser_input.input.previous_token_end();
+    let end = parser_input.previous_token_end();
 
-    Ok(AstNode::new(
-        Location { start, end },
-        NodeKind::Redirect {
-            parameters: parameters.unwrap_or_default(),
-            children: parsed_content,
-        },
-    ))
+    Ok(Element::Redirect(RedirectElement {
+        span: Span { start, end },
+        parameters: parameters.unwrap_or_default(),
+        children: parsed_content,
+    }))
 }

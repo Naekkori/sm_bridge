@@ -1,6 +1,6 @@
 //! Rendering context for footnote tracking
 
-use sevenmark_parser::ast::AstNode;
+use sevenmark_parser::ast::Element;
 
 use crate::config::RenderConfig;
 
@@ -12,7 +12,7 @@ pub struct FootnoteEntry {
     /// Display text (from #display parameter or auto-generated number)
     pub display: String,
     /// Footnote content (to be rendered later)
-    pub content: Vec<AstNode>,
+    pub content: Vec<Element>,
 }
 
 /// Simple rendering context - only tracks footnotes
@@ -59,7 +59,7 @@ impl<'a> RenderContext<'a> {
         &mut self,
         index: usize,
         display: Option<String>,
-        content: Vec<AstNode>,
+        content: Vec<Element>,
     ) -> &str {
         let display = display.unwrap_or_else(|| index.to_string());
 

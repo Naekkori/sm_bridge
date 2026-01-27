@@ -1,4 +1,4 @@
-use crate::ast::{AstNode, Location, NodeKind};
+use crate::ast::{Element, FootnoteElement, Span};
 use crate::parser::ParserInput;
 use crate::parser::element::element_parser;
 use crate::parser::parameter::parameter_core_parser;
@@ -11,11 +11,11 @@ use winnow::stream::Location as StreamLocation;
 use winnow::token::literal;
 
 /// Parse footnote elements enclosed in {{{#fn }}}
-pub fn brace_footnote_parser(parser_input: &mut ParserInput) -> Result<AstNode> {
+pub fn brace_footnote_parser(parser_input: &mut ParserInput) -> Result<Element> {
     if parser_input.state.inside_footnote {
         return Err(winnow::error::ContextError::new());
     }
-    let start = parser_input.input.current_token_start();
+    let start = parser_input.current_token_start();
 
     let ((parameters, _), parsed_content) = delimited(
         literal("{{{#fn"),
@@ -31,16 +31,14 @@ pub fn brace_footnote_parser(parser_input: &mut ParserInput) -> Result<AstNode> 
         (multispace0, literal("}}}")),
     )
     .parse_next(parser_input)?;
-    let end = parser_input.input.previous_token_end();
+    let end = parser_input.previous_token_end();
 
     let footnote_index = parser_input.state.next_footnote_index();
 
-    Ok(AstNode::new(
-        Location { start, end },
-        NodeKind::Footnote {
-            footnote_index,
-            parameters: parameters.unwrap_or_default(),
-            children: parsed_content,
-        },
-    ))
+    Ok(Element::Footnote(FootnoteElement {
+        span: Span { start, end },
+        footnote_index,
+        parameters: parameters.unwrap_or_default(),
+        children: parsed_content,
+    }))
 }

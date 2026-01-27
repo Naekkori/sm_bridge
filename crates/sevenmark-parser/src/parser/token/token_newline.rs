@@ -1,4 +1,4 @@
-use crate::ast::{AstNode, Location, NodeKind};
+use crate::ast::{Element, SoftBreakElement, Span};
 use crate::parser::ParserInput;
 use winnow::Result;
 use winnow::ascii::multispace1;
@@ -7,7 +7,7 @@ use winnow::prelude::*;
 use winnow::stream::Location as StreamLocation;
 use winnow::token::literal;
 
-pub fn token_newline_parser(parser_input: &mut ParserInput) -> Result<AstNode> {
+pub fn token_newline_parser(parser_input: &mut ParserInput) -> Result<Element> {
     if parser_input.state.inside_header && parser_input.input.starts_with('\n') {
         return Err(winnow::error::ContextError::new());
     }
@@ -17,9 +17,11 @@ pub fn token_newline_parser(parser_input: &mut ParserInput) -> Result<AstNode> {
         not((multispace1, peek(alt((literal("}}}"), literal("]]")))))).parse_next(parser_input)?;
     }
 
-    let start = parser_input.input.current_token_start();
+    let start = parser_input.current_token_start();
     literal("\n").parse_next(parser_input)?;
-    let end = parser_input.input.previous_token_end();
+    let end = parser_input.previous_token_end();
 
-    Ok(AstNode::new(Location { start, end }, NodeKind::SoftBreak))
+    Ok(Element::SoftBreak(SoftBreakElement {
+        span: Span { start, end },
+    }))
 }

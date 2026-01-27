@@ -1,4 +1,4 @@
-use sevenmark_parser::ast::{AstNode, ComparisonOperator, ComparisonOperatorKind, NodeKind};
+use sevenmark_parser::ast::{ComparisonOperator, ComparisonOperatorKind, Element, Expression};
 use std::collections::HashMap;
 
 /// 조건식 평가 결과
@@ -11,7 +11,7 @@ pub enum Value {
 }
 
 /// 조건식을 평가하여 bool 반환
-pub fn evaluate_condition(expr: &AstNode, variables: &HashMap<String, String>) -> bool {
+pub fn evaluate_condition(expr: &Expression, variables: &HashMap<String, String>) -> bool {
     match evaluate_expression(expr, variables) {
         Value::Bool(b) => b,
         Value::Null => false,
@@ -21,54 +21,62 @@ pub fn evaluate_condition(expr: &AstNode, variables: &HashMap<String, String>) -
 }
 
 /// Expression을 Value로 평가
-fn evaluate_expression(expr: &AstNode, variables: &HashMap<String, String>) -> Value {
-    match &expr.kind {
+fn evaluate_expression(expr: &Expression, variables: &HashMap<String, String>) -> Value {
+    match expr {
         // Short-circuit evaluation: true || X → true (X not evaluated)
-        NodeKind::ExprOr { left, right, .. } => {
+        Expression::Or { left, right, .. } => {
             if evaluate_condition(left, variables) {
                 return Value::Bool(true);
             }
             Value::Bool(evaluate_condition(right, variables))
         }
         // Short-circuit evaluation: false && X → false (X not evaluated)
-        NodeKind::ExprAnd { left, right, .. } => {
+        Expression::And { left, right, .. } => {
             if !evaluate_condition(left, variables) {
                 return Value::Bool(false);
             }
             Value::Bool(evaluate_condition(right, variables))
         }
-        NodeKind::ExprNot { children, .. } => {
-            let inner_val = evaluate_condition(children, variables);
+        Expression::Not { inner, .. } => {
+            let inner_val = evaluate_condition(inner, variables);
             Value::Bool(!inner_val)
         }
-        NodeKind::ExprComparison {
+        Expression::Comparison {
             left,
             operator,
             right,
+            ..
         } => {
             let left_val = evaluate_expression(left, variables);
             let right_val = evaluate_expression(right, variables);
             Value::Bool(compare_values(&left_val, operator, &right_val))
         }
-        NodeKind::ExprFunctionCall { name, arguments } => {
-            evaluate_function(name, arguments, variables)
-        }
-        NodeKind::ExprStringLiteral { value } => Value::String(value.clone()),
-        NodeKind::ExprNumberLiteral { value } => Value::Number(*value),
-        NodeKind::ExprBoolLiteral { value } => Value::Bool(*value),
-        NodeKind::ExprNull => Value::Null,
-        NodeKind::ExprGroup { children } => evaluate_expression(children, variables),
+        Expression::FunctionCall {
+            name, arguments, ..
+        } => evaluate_function(name, arguments, variables),
+        Expression::StringLiteral { value, .. } => Value::String(value.clone()),
+        Expression::NumberLiteral { value, .. } => Value::Number(*value),
+        Expression::BoolLiteral { value, .. } => Value::Bool(*value),
+        Expression::Null { .. } => Value::Null,
+        Expression::Group { inner, .. } => evaluate_expression(inner, variables),
 
-        // Regular AST nodes that can appear in expressions
-        NodeKind::Variable { name } => {
-            if let Some(value) = variables.get(name) {
+        // Element embedded in expression (Variable, Null macro, etc.)
+        Expression::Element(element) => evaluate_element(element, variables),
+    }
+}
+
+/// Element를 Value로 평가 (expression 내부에 포함된 경우)
+fn evaluate_element(element: &Element, variables: &HashMap<String, String>) -> Value {
+    match element {
+        Element::Variable(var) => {
+            if let Some(value) = variables.get(&var.name) {
                 Value::String(value.clone())
             } else {
                 Value::Null
             }
         }
-        NodeKind::Text { value } => Value::String(value.clone()),
-        NodeKind::Null => Value::Null,
+        Element::Text(text) => Value::String(text.value.clone()),
+        Element::Null(_) => Value::Null,
         _ => Value::Null,
     }
 }
@@ -127,7 +135,7 @@ fn to_number(value: &Value) -> Option<i64> {
 /// 함수 호출 평가
 fn evaluate_function(
     name: &str,
-    arguments: &[AstNode],
+    arguments: &[Expression],
     variables: &HashMap<String, String>,
 ) -> Value {
     match name {
@@ -171,110 +179,95 @@ fn evaluate_function(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use sevenmark_parser::ast::{
-        ComparisonOperator, Location, LogicalOperator, LogicalOperatorKind,
-    };
+    use sevenmark_parser::ast::{ComparisonOperator, LogicalOperator, LogicalOperatorKind, Span};
 
     // 테스트용 헬퍼 함수들
-    fn loc() -> Location {
-        Location::synthesized()
+    fn span() -> Span {
+        Span::synthesized()
     }
 
     fn op(kind: ComparisonOperatorKind) -> ComparisonOperator {
-        ComparisonOperator {
-            location: loc(),
-            kind,
+        ComparisonOperator { span: span(), kind }
+    }
+
+    fn str_lit(s: &str) -> Expression {
+        Expression::StringLiteral {
+            span: span(),
+            value: s.to_string(),
         }
     }
 
-    fn str_lit(s: &str) -> AstNode {
-        AstNode::new(
-            loc(),
-            NodeKind::ExprStringLiteral {
-                value: s.to_string(),
-            },
-        )
+    fn num_lit(n: i64) -> Expression {
+        Expression::NumberLiteral {
+            span: span(),
+            value: n,
+        }
     }
 
-    fn num_lit(n: i64) -> AstNode {
-        AstNode::new(loc(), NodeKind::ExprNumberLiteral { value: n })
+    fn bool_lit(b: bool) -> Expression {
+        Expression::BoolLiteral {
+            span: span(),
+            value: b,
+        }
     }
 
-    fn bool_lit(b: bool) -> AstNode {
-        AstNode::new(loc(), NodeKind::ExprBoolLiteral { value: b })
+    fn null_lit() -> Expression {
+        Expression::Null { span: span() }
     }
 
-    fn null_lit() -> AstNode {
-        AstNode::new(loc(), NodeKind::ExprNull)
+    fn var_elem(name: &str) -> Expression {
+        use sevenmark_parser::ast::VariableElement;
+        Expression::Element(Box::new(Element::Variable(VariableElement {
+            span: span(),
+            name: name.to_string(),
+        })))
     }
 
-    fn var_elem(name: &str) -> AstNode {
-        AstNode::new(
-            loc(),
-            NodeKind::Variable {
-                name: name.to_string(),
-            },
-        )
-    }
-
-    fn cmp(left: AstNode, kind: ComparisonOperatorKind, right: AstNode) -> AstNode {
-        AstNode::new(
-            loc(),
-            NodeKind::ExprComparison {
-                left: Box::new(left),
-                operator: op(kind),
-                right: Box::new(right),
-            },
-        )
+    fn cmp(left: Expression, kind: ComparisonOperatorKind, right: Expression) -> Expression {
+        Expression::Comparison {
+            span: span(),
+            left: Box::new(left),
+            operator: op(kind),
+            right: Box::new(right),
+        }
     }
 
     fn logical_op(kind: LogicalOperatorKind) -> LogicalOperator {
-        LogicalOperator {
-            location: loc(),
-            kind,
+        LogicalOperator { span: span(), kind }
+    }
+
+    fn and(left: Expression, right: Expression) -> Expression {
+        Expression::And {
+            span: span(),
+            operator: logical_op(LogicalOperatorKind::And),
+            left: Box::new(left),
+            right: Box::new(right),
         }
     }
 
-    fn and(left: AstNode, right: AstNode) -> AstNode {
-        AstNode::new(
-            loc(),
-            NodeKind::ExprAnd {
-                operator: logical_op(LogicalOperatorKind::And),
-                left: Box::new(left),
-                right: Box::new(right),
-            },
-        )
+    fn or(left: Expression, right: Expression) -> Expression {
+        Expression::Or {
+            span: span(),
+            operator: logical_op(LogicalOperatorKind::Or),
+            left: Box::new(left),
+            right: Box::new(right),
+        }
     }
 
-    fn or(left: AstNode, right: AstNode) -> AstNode {
-        AstNode::new(
-            loc(),
-            NodeKind::ExprOr {
-                operator: logical_op(LogicalOperatorKind::Or),
-                left: Box::new(left),
-                right: Box::new(right),
-            },
-        )
+    fn not(inner: Expression) -> Expression {
+        Expression::Not {
+            span: span(),
+            operator: logical_op(LogicalOperatorKind::Not),
+            inner: Box::new(inner),
+        }
     }
 
-    fn not(inner: AstNode) -> AstNode {
-        AstNode::new(
-            loc(),
-            NodeKind::ExprNot {
-                operator: logical_op(LogicalOperatorKind::Not),
-                children: Box::new(inner),
-            },
-        )
-    }
-
-    fn func(name: &str, args: Vec<AstNode>) -> AstNode {
-        AstNode::new(
-            loc(),
-            NodeKind::ExprFunctionCall {
-                name: name.to_string(),
-                arguments: args,
-            },
-        )
+    fn func(name: &str, args: Vec<Expression>) -> Expression {
+        Expression::FunctionCall {
+            span: span(),
+            name: name.to_string(),
+            arguments: args,
+        }
     }
 
     #[test]

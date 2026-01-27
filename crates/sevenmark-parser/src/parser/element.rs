@@ -8,7 +8,7 @@ use super::mention::{mention_discussion_parser, mention_user_parser};
 use super::text::text_parser;
 use super::token::*;
 
-use crate::ast::AstNode;
+use crate::ast::Element;
 use crate::parser::ParserInput;
 use crate::parser::brace::{
     brace_blockquote_parser, brace_category_parser, brace_code_parser, brace_define_parser,
@@ -27,7 +27,7 @@ use winnow::combinator::{alt, dispatch, peek, repeat};
 use winnow::prelude::*;
 use winnow::token::any;
 
-pub fn element_parser(parser_input: &mut ParserInput) -> Result<Vec<AstNode>> {
+pub fn element_parser(parser_input: &mut ParserInput) -> Result<Vec<Element>> {
     repeat(
         1..,
         dispatch! {peek(any);

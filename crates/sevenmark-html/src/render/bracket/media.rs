@@ -1,7 +1,7 @@
 //! Media element rendering
 
 use maud::{Markup, html};
-use sevenmark_parser::ast::{AstNode, Parameters, ResolvedMediaInfo};
+use sevenmark_parser::ast::{Element, Parameters, ResolvedMediaInfo};
 
 use crate::classes;
 use crate::context::RenderContext;
@@ -9,7 +9,7 @@ use crate::render::{render_elements, utils};
 
 pub fn render(
     parameters: &Parameters,
-    children: &[AstNode],
+    children: &[Element],
     resolved_info: Option<&ResolvedMediaInfo>,
     ctx: &mut RenderContext,
 ) -> Markup {

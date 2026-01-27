@@ -1,4 +1,4 @@
-use crate::ast::AstNode;
+use crate::ast::Element;
 use crate::parser::ParserInput;
 use crate::parser::brace::include::include_text::include_text_parser;
 use crate::parser::escape::escape_parser;
@@ -7,7 +7,7 @@ use winnow::Result;
 use winnow::combinator::{alt, repeat};
 use winnow::prelude::*;
 
-pub fn include_content_parser(parser_input: &mut ParserInput) -> Result<Vec<AstNode>> {
+pub fn include_content_parser(parser_input: &mut ParserInput) -> Result<Vec<Element>> {
     repeat(
         1..,
         alt((

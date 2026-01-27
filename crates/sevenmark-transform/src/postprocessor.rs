@@ -5,9 +5,7 @@ use crate::wiki::{DocumentNamespace, check_documents_exist};
 use anyhow::Result;
 use sea_orm::DatabaseConnection;
 use serde::Serialize;
-use sevenmark_parser::ast::{
-    AstNode, NodeKind, ResolvedDoc, ResolvedFile, ResolvedMediaInfo, Traversable,
-};
+use sevenmark_parser::ast::{Element, ResolvedDoc, ResolvedFile, ResolvedMediaInfo, Traversable};
 use std::collections::{HashMap, HashSet};
 use tracing::debug;
 use utoipa::ToSchema;
@@ -25,7 +23,7 @@ pub struct ProcessedDocument {
     /// User mention UUIDs collected from the document
     pub user_mentions: HashSet<String>,
     #[schema(value_type = Vec<Object>)]
-    pub ast: Vec<AstNode>,
+    pub ast: Vec<Element>,
     pub sections: Vec<SectionInfo>,
 }
 
@@ -94,23 +92,18 @@ pub async fn postprocess_sevenmark(
     })
 }
 
-fn resolve_media_elements(elements: &mut [AstNode], resolved_map: &MediaResolutionMap) {
+fn resolve_media_elements(elements: &mut [Element], resolved_map: &MediaResolutionMap) {
     for element in elements {
         resolve_media_recursive(element, resolved_map);
     }
 }
 
-fn resolve_media_recursive(element: &mut AstNode, resolved_map: &MediaResolutionMap) {
-    if let NodeKind::Media {
-        parameters,
-        resolved_info,
-        ..
-    } = &mut element.kind
-    {
+fn resolve_media_recursive(element: &mut Element, resolved_map: &MediaResolutionMap) {
+    if let Element::Media(media_elem) = element {
         let mut resolved = ResolvedMediaInfo::default();
 
         // Process #file parameter (이미지 표시용)
-        if let Some(file_param) = parameters.get("file") {
+        if let Some(file_param) = media_elem.parameters.get("file") {
             let title = extract_plain_text(&file_param.value);
             if !title.is_empty() {
                 let key = (DocumentNamespace::File, title);
@@ -128,7 +121,7 @@ fn resolve_media_recursive(element: &mut AstNode, resolved_map: &MediaResolution
         }
 
         // Process #document parameter
-        if let Some(doc_param) = parameters.get("document") {
+        if let Some(doc_param) = media_elem.parameters.get("document") {
             let title = extract_plain_text(&doc_param.value);
             if !title.is_empty() {
                 let key = (DocumentNamespace::Document, title.clone());
@@ -141,7 +134,7 @@ fn resolve_media_recursive(element: &mut AstNode, resolved_map: &MediaResolution
         }
 
         // Process #category parameter
-        if let Some(cat_param) = parameters.get("category") {
+        if let Some(cat_param) = media_elem.parameters.get("category") {
             let title = extract_plain_text(&cat_param.value);
             if !title.is_empty() {
                 let key = (DocumentNamespace::Category, title.clone());
@@ -154,7 +147,7 @@ fn resolve_media_recursive(element: &mut AstNode, resolved_map: &MediaResolution
         }
 
         // Process #url parameter (외부 링크)
-        if let Some(url_param) = parameters.get("url") {
+        if let Some(url_param) = media_elem.parameters.get("url") {
             let url = extract_plain_text(&url_param.value);
             if !url.is_empty() {
                 resolved.url = Some(url);
@@ -167,7 +160,7 @@ fn resolve_media_recursive(element: &mut AstNode, resolved_map: &MediaResolution
             || resolved.category.is_some()
             || resolved.url.is_some()
         {
-            *resolved_info = Some(resolved);
+            media_elem.resolved_info = Some(resolved);
         }
     }
 

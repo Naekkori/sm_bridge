@@ -1,32 +1,29 @@
 [package]
 name = "sevenmark-transform"
-version = "2.12.22"
-authors = ["Levi Laine <shiueo.csh@gmail.com>"]
-license = "Apache-2.0"
-repository = "https://github.com/sevenwiki/sevenmark"
-edition = "2021"
-rust-version = "1.81.0"
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+edition.workspace = true
+rust-version.workspace = true
 description = "sevenmark/transform"
 
 [dependencies]
 # Internal
-sevenmark-parser = { path = "../sevenmark-parser" }
+sevenmark-parser = { workspace = true }
 
 # Shared
-serde = { version = "1.0.228" }
-serde_json = "1.0.149"
-anyhow = "1.0.100"
-line-span = "0.1.5"
-tracing = { version = "0.1.44", optional = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
 
 # WASM (optional)
-wasm-bindgen = { version = "0.2.106", optional = true }
-js-sys = { version = "0.3.83", optional = true }
-web-sys = { version = "0.3.83", optional = true }
+wasm-bindgen = { workspace = true, optional = true }
+js-sys = { workspace = true, optional = true }
+web-sys = { workspace = true, optional = true }
 
 [features]
 default = []
-server = []
 wasm = [
     "wasm-bindgen",
     "js-sys",
@@ -38,5 +35,5 @@ wasm = [
 crate-type = ["cdylib", "rlib"]
 
 [[test]]
-name = "monaco_tests"
+name = "codemirror_tests"
 required-features = ["sevenmark-parser/include_locations"]

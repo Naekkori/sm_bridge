@@ -1,6 +1,4 @@
 use crate::error::SevenMarkError;
-use std::collections::HashSet;
-use std::rc::Rc;
 
 macro_rules! context_setters {
     ($($name:ident => $field:ident),*) => {
@@ -21,7 +19,7 @@ macro_rules! context_setters {
 }
 
 #[derive(Debug, Clone)]
-pub struct ParseContext {
+pub struct ParseContext<'i> {
     pub recursion_depth: usize,
     pub trim_depth: usize,
     pub inside_header: bool,
@@ -33,15 +31,15 @@ pub struct ParseContext {
     pub inside_underline: bool,
     pub inside_footnote: bool,
     pub inside_media_element: bool,
-    pub line_starts: Rc<HashSet<usize>>,
+    pub original_input: &'i [u8],
     pub max_recursion_depth: usize,
     pub section_counter: usize,
     pub footnote_counter: usize,
 }
 
-impl ParseContext {
+impl<'i> ParseContext<'i> {
     /// 새 컨텍스트 생성
-    pub fn new() -> Self {
+    pub fn new(input: &'i str) -> Self {
         Self {
             recursion_depth: 0,
             trim_depth: 0,
@@ -54,7 +52,7 @@ impl ParseContext {
             inside_underline: false,
             inside_footnote: false,
             inside_media_element: false,
-            line_starts: Rc::new(HashSet::new()),
+            original_input: input.as_bytes(),
             max_recursion_depth: 16,
             section_counter: 1,
             footnote_counter: 1,
@@ -63,7 +61,7 @@ impl ParseContext {
 
     /// 현재 위치가 라인 시작인지 확인
     pub fn is_at_line_start(&self, position: usize) -> bool {
-        self.line_starts.contains(&position)
+        position == 0 || self.original_input.get(position - 1) == Some(&b'\n')
     }
 
     /// 재귀 깊이 증가 (in-place)
@@ -139,11 +137,5 @@ impl ParseContext {
         underline => inside_underline,
         footnote => inside_footnote,
         media_element => inside_media_element
-    }
-}
-
-impl Default for ParseContext {
-    fn default() -> Self {
-        Self::new()
     }
 }

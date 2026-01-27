@@ -1,7 +1,7 @@
 //! Footnote rendering
 
 use maud::{Markup, html};
-use sevenmark_parser::ast::{AstNode, Parameters};
+use sevenmark_parser::ast::{Element, Parameters};
 
 use crate::classes;
 use crate::context::RenderContext;
@@ -11,7 +11,7 @@ use crate::render::{render_elements, utils};
 pub fn render(
     footnote_index: usize,
     parameters: &Parameters,
-    children: &[AstNode],
+    children: &[Element],
     ctx: &mut RenderContext,
 ) -> Markup {
     if ctx.in_footnote {

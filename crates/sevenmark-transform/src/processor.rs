@@ -2,7 +2,7 @@ use crate::wiki::SeaweedFsClient;
 use crate::{ProcessedDocument, postprocess_sevenmark, preprocess_sevenmark};
 use anyhow::Result;
 use sea_orm::DatabaseConnection;
-use sevenmark_parser::ast::AstNode;
+use sevenmark_parser::ast::Element;
 
 /// Processes SevenMark AST through preprocessing and postprocessing pipeline
 ///
@@ -10,7 +10,7 @@ use sevenmark_parser::ast::AstNode;
 /// 1. Preprocessing: Variable substitution, include resolution, media collection
 /// 2. Postprocessing: Media reference resolution (file URLs, document/category links)
 pub async fn process_sevenmark(
-    ast: Vec<AstNode>,
+    ast: Vec<Element>,
     db: &DatabaseConnection,
     seaweedfs: &SeaweedFsClient,
 ) -> Result<ProcessedDocument> {

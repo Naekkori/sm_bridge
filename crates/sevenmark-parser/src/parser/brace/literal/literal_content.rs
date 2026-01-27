@@ -1,4 +1,4 @@
-use crate::ast::AstNode;
+use crate::ast::Element;
 use crate::parser::ParserInput;
 use crate::parser::brace::brace_literal_parser;
 use crate::parser::brace::literal::literal_text::literal_text_parser;
@@ -12,7 +12,7 @@ use winnow::prelude::*;
 
 /// Parse content within literal braces
 /// Priority in literal syntax: escaping, brace_literal (for recursion), text parsing
-pub fn literal_content_parser(parser_input: &mut ParserInput) -> Result<Vec<AstNode>> {
+pub fn literal_content_parser(parser_input: &mut ParserInput) -> Result<Vec<Element>> {
     repeat(
         1..,
         alt((
