@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>test</title>
+</head>
+
+<body>
+    <script type="module">
+        import init, { sm_editor_injecter } from "./sm_bridge.js";
+        import "./editor_support.js";
+
+        async function run() {
+            await init();
+            sm_editor_injecter("editor-container");
+            const savedCode = localStorage.getItem("code");
+            if (savedCode && window.cm_instances && window.cm_instances.length > 0) {
+                window.set_editor_text(savedCode);
+            }
+        }
+        run();
+        // 전역 추출 함수 정의
+        window.setMyText = () => {
+            // editor_support.js에 있는 get_editor_text 함수를 호출
+            if (typeof window.get_editor_text === "function") {
+                let text = window.get_editor_text();
+                localStorage.setItem("code", text);
+            } else {
+                console.error("추출 함수가 로드되지 않았습니다.");
+            }
+        };
+        window.getMyText = (set) => {
+            if (typeof window.set_editor_text === "function") {
+                let lsGetText = localStorage.getItem("code");
+                window.set_editor_text(lsGetText);
+            } else {
+                console.error("불러올수 없음");
+            }
+        }
+    </script>
+
+    <button onclick="window.setMyText()">텍스트 저장</button>
+    <div id="editor-container"></div>
+</body>
+
+</html>

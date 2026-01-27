@@ -1,0 +1,20 @@
+{
+  "name": "sm_bridge",
+  "type": "module",
+  "collaborators": [
+    "Naekkori"
+  ],
+  "description": "SevenMark Renderer And WYSIWYG Engine",
+  "version": "0.1.0",
+  "license": "MIT",
+  "files": [
+    "sm_bridge_bg.wasm",
+    "sm_bridge.js",
+    "sm_bridge.d.ts"
+  ],
+  "main": "sm_bridge.js",
+  "types": "sm_bridge.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
