@@ -5,7 +5,6 @@ use web_sys::HtmlDivElement;
 extern "C" {
     fn init_codemirror(parent: &web_sys::Element);
 }
-
 pub fn inject(ed_container: &str) {
     let window = web_sys::window().expect("can't get window");
     let document = window.document().expect("can't get document");
