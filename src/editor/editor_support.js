@@ -1,8 +1,8 @@
-import { EditorView, basicSetup } from "https://esm.sh/codemirror";
-import { EditorState, StateField } from "https://esm.sh/@codemirror/state";
-import { Decoration } from "https://esm.sh/@codemirror/view";
-import { undoDepth, redoDepth, undo, redo } from "https://esm.sh/@codemirror/commands";
-import { openSearchPanel, closeSearchPanel } from "https://esm.sh/@codemirror/search@6.5.6";
+import { EditorView, basicSetup } from "codemirror";
+import { EditorState, StateField } from "@codemirror/state";
+import { Decoration } from "@codemirror/view";
+import { undoDepth, redoDepth, undo, redo } from "@codemirror/commands";
+import { openSearchPanel, closeSearchPanel } from "@codemirror/search";
 import { sm_renderer, cm_highlighter } from "./sm_bridge.js";
 
 window.cm_instances = [];
@@ -434,6 +434,30 @@ const TOOLBAR_CSS = `
         align-items: center;
     }
 `;
+const IMPORT_MAP = `
+  {
+    "imports": {
+      "codemirror": "https://ga.jspm.io/npm:codemirror@6.0.2/dist/index.js"
+    },
+    "scopes": {
+      "https://ga.jspm.io/": {
+        "@codemirror/autocomplete": "https://ga.jspm.io/npm:@codemirror/autocomplete@6.20.0/dist/index.js",
+        "@codemirror/commands": "https://ga.jspm.io/npm:@codemirror/commands@6.10.1/dist/index.js",
+        "@codemirror/language": "https://ga.jspm.io/npm:@codemirror/language@6.12.1/dist/index.js",
+        "@codemirror/lint": "https://ga.jspm.io/npm:@codemirror/lint@6.9.2/dist/index.js",
+        "@codemirror/search": "https://ga.jspm.io/npm:@codemirror/search@6.6.0/dist/index.js",
+        "@codemirror/state": "https://ga.jspm.io/npm:@codemirror/state@6.5.4/dist/index.js",
+        "@codemirror/view": "https://ga.jspm.io/npm:@codemirror/view@6.39.11/dist/index.js",
+        "@lezer/common": "https://ga.jspm.io/npm:@lezer/common@1.5.0/dist/index.js",
+        "@lezer/highlight": "https://ga.jspm.io/npm:@lezer/highlight@1.2.3/dist/index.js",
+        "@marijn/find-cluster-break": "https://ga.jspm.io/npm:@marijn/find-cluster-break@1.0.2/src/index.js",
+        "crelt": "https://ga.jspm.io/npm:crelt@1.0.6/index.js",
+        "style-mod": "https://ga.jspm.io/npm:style-mod@4.1.3/src/style-mod.js",
+        "w3c-keyname": "https://ga.jspm.io/npm:w3c-keyname@2.2.8/index.js"
+      }
+    }
+  }
+`;
 export function init_codemirror(parent, initialDoc = "") {
     const style = document.createElement("style");
     style.textContent = cm_css;
@@ -446,6 +470,10 @@ export function init_codemirror(parent, initialDoc = "") {
     googleFont.href = "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@400;500;600;700&display=swap";
     googleFont.rel = "stylesheet";
     document.head.appendChild(googleFont);
+    const importmap = document.createElement("script");
+    importmap.type = "importmap";
+    importmap.textContent = IMPORT_MAP;
+    document.head.appendChild(importmap);
     const fixedHeightEditor = EditorView.theme({
         "&": { height: "100%" },
         "& .cm-scroller": { overflow: "auto" }
