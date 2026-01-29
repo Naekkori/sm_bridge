@@ -20,9 +20,12 @@
 
             sm_editor_injecter("editor-container");
             const savedCode = localStorage.getItem("code");
-            if (savedCode && window.cm_instances && window.cm_instances.length > 0) {
-                window.set_editor_text(savedCode);
-            }
+            const layzyload = setInterval(() => {
+                if (savedCode && window.cm_instances && window.cm_instances.length > 0) {
+                    window.set_editor_text(savedCode);
+                    clearInterval(layzyload);
+                }
+            }, 100);
 
         }
         run();

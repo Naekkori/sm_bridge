@@ -35,6 +35,8 @@ wasm-pack build --target web --dev
 # 프로덕션 빌드
 wasm-pack build --target web --release
 ```
+<br>
+Windows 환경에서 빌드를 위한 build.bat 파일이 포함되어 있습니다.
 
 ---
 

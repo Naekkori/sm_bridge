@@ -1,0 +1,53 @@
+SevenMark Bridge (sm_bridge)
+Copyright (c) 2026 Naekkori
+
+This product includes software developed by the following projects:
+
+# SevenMark Engine
+- SevenMark (MIT)
+  https://github.com/sevenwiki/sevenmark
+
+# Rust Dependencies
+
+- anyhow (MIT OR Apache-2.0)
+  https://github.com/dtolnay/anyhow
+- console_error_panic_hook (Apache-2.0/MIT)
+  https://github.com/rustwasm/console_error_panic_hook
+- js-sys (MIT/Apache-2.0)
+  https://github.com/rustwasm/wasm-bindgen
+- line-span (MIT)
+  https://github.com/u8sand/line-span
+- maud (MIT OR Apache-2.0)
+  https://github.com/lambda-fairy/maud
+- paste (MIT OR Apache-2.0)
+  https://github.com/dtolnay/paste
+- serde (MIT OR Apache-2.0)
+  https://github.com/serde-rs/serde
+- serde_json (MIT OR Apache-2.0)
+  https://github.com/serde-rs/json
+- wasm-bindgen (MIT/Apache-2.0)
+  https://github.com/rustwasm/wasm-bindgen
+- web-sys (MIT/Apache-2.0)
+  https://github.com/rustwasm/wasm-bindgen
+- winnow (MIT)
+  https://github.com/winnow-rs/winnow
+
+# JavaScript Dependencies
+
+- CodeMirror 6 (MIT)
+  https://codemirror.net/
+  Includes:
+  - codemirror
+  - @codemirror/state
+  - @codemirror/view
+  - @codemirror/commands
+  - @codemirror/search
+  - @codemirror/language
+  - @codemirror/autocomplete
+  - @codemirror/lint
+
+- es-module-shims (MIT)
+  https://github.com/guybedford/es-module-shims
+
+# Material Symbols (Apache License 2.0)
+  https://fonts.google.com/icons
