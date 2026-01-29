@@ -1,7 +1,7 @@
 use wasm_bindgen::{JsCast, prelude::wasm_bindgen};
 use web_sys::HtmlDivElement;
 
-#[wasm_bindgen]
+#[wasm_bindgen(module = "/src/editor/editor_support.js")]
 extern "C" {
     fn init_codemirror(parent: &web_sys::Element);
 }

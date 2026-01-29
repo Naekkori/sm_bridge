@@ -35,7 +35,6 @@ paste = "1.0"
 line-span = "0.1"
 
 [dependencies]
-# 워크스페이스에 정의된 의존성을 가져와서 사용함
 sevenmark-parser = { workspace = true, features = ["include_locations"] }
 sevenmark-transform = { workspace = true }
 sevenmark-html = { workspace = true }
@@ -61,6 +60,9 @@ features = [
     "Range",
     "TreeWalker",
     "NodeFilter",
+    "HtmlCollection",
+    "HtmlHeadElement",
+    "HtmlScriptElement",
 ]
 
 [profile.release]

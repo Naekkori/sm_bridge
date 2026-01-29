@@ -36,6 +36,47 @@ pub fn sm_editor_injecter(ed_container: &str) {
     console::log_1(&format!("Done.").into());
 }
 
+#[wasm_bindgen(start)]
+pub fn start() {
+    let window = web_sys::window().expect("no global window exists");
+    let document = window.document().expect("should have a document on window");
+    let head = document.head().expect("should have a head in document");
+
+    // importmap 주입 여부 확인 (중복 주입 방지)
+    if let Ok(Some(_)) = document.query_selector("script[type='importmap']") {
+        return;
+    }
+
+    let import_map_json = r#"{
+    "imports": {
+      "codemirror": "https://esm.sh/codemirror@6.0.1",
+      "@codemirror/state": "https://esm.sh/@codemirror/state@6.5.4",
+      "@codemirror/view": "https://esm.sh/@codemirror/view@6.39.11",
+      "@codemirror/commands": "https://esm.sh/@codemirror/commands@6.10.1",
+      "@codemirror/search": "https://esm.sh/@codemirror/search@6.6.0",
+      "@codemirror/language": "https://esm.sh/@codemirror/language@6.12.1",
+      "@codemirror/autocomplete": "https://esm.sh/@codemirror/autocomplete@6.20.0",
+      "@codemirror/lint": "https://esm.sh/@codemirror/lint@6.9.2"
+    }
+  }"#;
+
+    let script = document.create_element("script").unwrap();
+    script.set_attribute("type", "importmap").unwrap();
+    script.set_inner_html(import_map_json);
+    head.append_child(&script).unwrap();
+
+    // es-module-shims 폴리필 주입 (동적 importmap 지원을 위해 필요)
+    let polyfill = document.create_element("script").unwrap();
+    polyfill.set_attribute("async", "true").unwrap();
+    polyfill
+        .set_attribute(
+            "src",
+            "https://ga.jspm.io/npm:es-module-shims@1.10.1/dist/es-module-shims.js",
+        )
+        .unwrap();
+    head.append_child(&polyfill).unwrap();
+}
+
 #[wasm_bindgen]
 pub fn cm_highlighter(raw: &str) -> String {
     let doc = sevenmark_parser::core::parse_document(&raw);

@@ -1,26 +1,4 @@
 {
-  "name": "sm_bridge",
-  "version": "1.0.0",
-  "description": "**SM Bridge**는 강력한 **SevenMark** 마크다운 엔진을 웹 환경에서 사용할 수 있도록 연결하는 현대적인 **WebAssembly (WASM)** 브릿지입니다. \r <br> \r Rust의 강력한 성능과 안전성을 바탕으로, 웹 브라우저에서도 초고속 렌더링과 WYSIWYG 에디팅 경험을 제공합니다.",
-  "homepage": "https://github.com/Naekkori/sm_bridge#readme",
-  "bugs": {
-    "url": "https://github.com/Naekkori/sm_bridge/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Naekkori/sm_bridge.git"
-  },
-  "license": "ISC",
-  "author": "",
-  "type": "commonjs",
-  "main": "index.js",
-  "directories": {
-    "example": "example"
-  },
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "dependencies": {
-    "codemirror": "^6.0.2"
-  }
+  "name": "sm-bridge",
+  "version": "0.1.0"
 }
