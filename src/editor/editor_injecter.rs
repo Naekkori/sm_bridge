@@ -5,7 +5,7 @@ use web_sys::HtmlDivElement;
 extern "C" {
     fn init_codemirror(parent: &web_sys::Element);
 }
-pub fn inject(ed_container: &str) {
+pub fn inject(ed_container: &str, ed_height: Option<&str>) {
     let window = web_sys::window().expect("can't get window");
     let document = window.document().expect("can't get document");
     let root = document
@@ -17,7 +17,9 @@ pub fn inject(ed_container: &str) {
     // 레이아웃 설정
     root.style().set_property("display", "flex").ok();
     root.style().set_property("gap", "1rem").ok();
-    root.style().set_property("min-height", "600px").ok();
+    root.style()
+        .set_property("min-height", ed_height.unwrap_or("600px"))
+        .ok();
 
     // Raw 에디터 영역(Container) 생성
     let raw_area = document.create_element("div").unwrap();
