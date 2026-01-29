@@ -199,10 +199,12 @@ body.dark {
 
 /* CodeMirror 에디터 배경 및 텍스트 색상 */
 .cm-editor { flex: 1; display: flex; flex-direction: column; background-color: var(--sm-bg-editor) !important; color: var(--sm-color-text) !important; }
-.cm-content { background-color: var(--sm-bg-editor) !important; color: var(--sm-color-text) !important; }
+.cm-content { color: var(--sm-color-text) !important; }
 .cm-line { color: var(--sm-color-text) !important; }
 .cm-cursor { border-left-color: var(--sm-color-text) !important; }
-.cm-selectionBackground { background-color: rgba(100, 150, 255, 0.3) !important; }
+.cm-selectionBackground, .cm-focused .cm-selectionBackground { background-color: #3392FF44 !important; }
+.cm-selectionMatch { background-color: #3392FF22 !important; }
+.cm-activeLine { background-color: #88888811 !important; }
 .cm-gutters { background-color: var(--sm-bg-editor) !important; border-right: 1px solid var(--sm-border-editor) !important; }
 .cm-lineNumbers .cm-gutterElement { color: #858585 !important; }
 body.dark .cm-lineNumbers .cm-gutterElement { color: #858585 !important; }
@@ -251,6 +253,7 @@ body.dark .cm-lineNumbers .cm-gutterElement { color: #858585 !important; }
 .cm-panel.cm-search .cm-button:active { background-color: var(--sm-btn-active-bg); transform: translateY(1px); }
 .cm-panel.cm-search .cm-button[name="close"] { position: absolute; top: 10px; right: 8px; width: 28px !important; height: 28px !important; padding: 0; background-color: transparent; border: none; color: var(--sm-color-error); border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 20; font-size: 1.4em; box-shadow: none; }
 .cm-panel.cm-search .cm-button[name="close"]:hover { background-color: var(--sm-bg-error); color: #fff; }
+body.dark .cm-panel.cm-search .cm-button[name="close"] { color: #fff; }
 .cm-panel.cm-search label { display: inline-flex; align-items: center; gap: 4px; font-size: 0.85em; color: var(--sm-color-text); margin: 0; cursor: pointer; user-select: none; }
 .cm-panel.cm-search input[type="checkbox"] { accent-color: var(--sm-color-header); cursor: pointer; }
 @media (max-width: 600px) { .cm-panel.cm-search { flex-direction: column; align-items: stretch; } .cm-textfield { width: 100%; margin-bottom: 4px; } .cm-panel.cm-search .cm-button { flex: 1; } }
@@ -280,6 +283,11 @@ const TOOLBAR_CSS = `
     .sm_modal_content label { color: var(--sm-color-text); }
     .sm_modal_close { position: absolute; top: 8px; right: 8px; cursor: pointer; font-size: 24px; color: var(--sm-btn-text); }
     .sm_modal_close:hover { color: var(--sm-color-error); }
+    .sm-editor-logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
 `;
 
 // 테마 전환 헬퍼 함수
@@ -537,6 +545,7 @@ function setup_toolbar(CM) {
         {
             id: "sm-toolbar-settings", className: "sm_toolbar_btn", text: "settings", title: "설정",
             onClick: () => {
+                const smBridgeLogo = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAExElEQVR4nOydy28bRRzHZ73r18bPOA+5TeOmSapWLZCKR1VAoBaKBKhInFE5gcQFJI6cOHJCSFw5of4BIAGHghAgqlblmUZG0CiBNo3rxLFjJ3bW68d6+TkbNm6yTvwTl271/WgO49mdkfzRzG9+Mz5Yuf312wL0hiJAz0AWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWg71kSR6vmnxUHXzYG0oq/mhTL9bLi9rS79rKjDBbnW/6o2OxyQuOg9TLmepKWl+dFcIULqerLH98cuCh12V/dPtVdZCKOnzKqK6W5r/ayP5sP/L4+vzxiS7jTIRHn23Vy/n0Jb3wl3AzHsdWJZgYmnqz01QncrA/cfKiL5rabjL3mTUeX3jo1Fve8IhwM84zKzZxQVIC7ZrZKs19oRdm65WMJMmhkScjh5+T/bHS3Jf1tduOfbPXPmhUslSRA3Fv33AwcSycOtd+IHli4y+uTH8iXIujLEkdfsSqrS98t37rW6tumq3ywg/lO1fUwZNa7sa9PaTdoxh6kQotPbJGi5dafC6fWQ7LUPaFhSRb9WZ1dedj09hpaj+siSbac8vdm6+DLKOxYW924YNnJNkn/h927G9sLAs34xTgae4sT1tVCskHn34/fvRVj6LuNUyXAC8pwejEy4H+o9bH8uIV4Wac10Vx9vPAwHGPEhSbG1k4dTY08hStvsri1Vpp3qFDR8xKnHjNNOrtoQP9cjBOz6z2yp0ftaXfhJtxlmXUSss/fdTODyKHrBZajH3Jx6k0tVzx5mfV/B/3dOiYWb7I6O4BK5lra/9cFi5HfvfiaccHrUalkrlKsdkbGm6H/P/wePv6ko+Rnlpxzm70qkObjV0h6ZHUWUpH9MJN4Vr22Z603DSVQOI4fdV26JG2Ylx0/KV6JVt12hbtPIsmoxIcUNQBdWhqU6UUSZ2jZILyD+FOetrL9cKfVORA/+DUG3auFD3ywrYspzyLIlejcpdKNTejBOP+2Dg1hg6cdq8sT++vGvrq0vUP7fOdL3yITto99q3m0laFDlLCtTCzRJNC/3wgccz6JMles9XopR+dtK1Ky6jZjaPnP+58Z+Gbd8T9jfPMorPh1oFuF3QbYVVaTa3V0LZa9zxIUwqiDk9ZdbqxEa7FYWZRfhAZOy/a8eWJyt3rG9lf6IJFkgO+yAhFaDvD1LK/7j20FeD9sSPh0WeoYjXaJ0034iDLXmXe0AHK3ansfsc09LXOr90R4JNn3hNdKC9835lwuA4HWYX0pUY5Exl73uMNOfahuJWf+ZTivegZo76+9vdlSuKFm5G6/gudJAcHT9BtFF3y0RZGl1l0A9G+I86nteUbNLU63/VFD8cnX9kxgGkahl5qanm9OFsr3XoArpUl/GVf7+DXHQaQxQCyGEAWg38BAAD////s03YAAAAGSURBVAMAlF1s4mdoB4EAAAAASUVORK5CYII="
                 const view = window.cm_instances[window.cm_instances.length - 1];
                 if (!view) return;
 
@@ -549,10 +558,13 @@ function setup_toolbar(CM) {
                                 <option value="dark" ${document.body.classList.contains('dark') ? 'selected' : ''}>Dark</option>
                             </select>
                         </label>
-                        <div style="display:flex; gap:10px;">
-                            <span>정보<span>
-                            <br>
-                            <code id="sm-editor-info"></code>
+                        <hr style="width: 100%; border: 0; border-top: 1px solid var(--sm-border-editor); margin: 5px 0;">
+                        <div style="display:flex; flex-direction:column; gap:5px; margin-top:10px;">
+                            <div class="sm-editor-logo">
+                                <img src="${smBridgeLogo}" alt="sm_bridge_logo" style="width: 50px; height: 50px;">
+                                <span style="font-size: 25pt;">SM Bridge</span>
+                            </div>
+                            <code id="sm-editor-info" style="padding-left: 60px; opacity: 0.8;"></code>
                         </div>
                     </div>
                 `, (modal) => {
