@@ -1,4 +1,6 @@
-import { sm_renderer, cm_highlighter, get_crate_info } from "../../../../sm_bridge.js";
+// 1번 라인의 순환 참조 임포트 제거
+// import { sm_renderer, cm_highlighter, get_crate_info } from "../../../../sm_bridge.js";
+
 
 window.cm_instances = [];
 
@@ -42,7 +44,9 @@ function create_sm_highlight_field(CM) {
             if (!tr.docChanged && decorations.size > 0) return decorations;
 
             const raw = tr.state.doc.toString();
-            const astJson = cm_highlighter(raw);
+            // 전역(window) 객체나 sm_bridge 를 통해 제공되는 함수 사용
+            const astJson = (typeof cm_highlighter !== 'undefined' ? cm_highlighter : window.cm_highlighter)(raw);
+
             const ast = JSON.parse(astJson);
 
             const marks = [];
@@ -330,7 +334,8 @@ export async function init_codemirror(parent, initialDoc = "") {
     const updateListener = EditorView.updateListener.of((update) => {
         if (update.docChanged) {
             const raw = update.state.doc.toString();
-            const html = sm_renderer(raw);
+            const html = (typeof sm_renderer !== 'undefined' ? sm_renderer : window.sm_renderer)(raw);
+
             const preview = document.getElementById("sm-editor-preview");
             if (preview) preview.innerHTML = html;
         }
@@ -557,7 +562,9 @@ function setup_toolbar(CM) {
                         window.setEditorTheme(theme);
                     });
                     const info = modal.querySelector("#sm-editor-info");
-                    let crate_info = JSON.parse(get_crate_info());
+                    const info_func = typeof get_crate_info !== 'undefined' ? get_crate_info : window.get_crate_info;
+                    let crate_info = JSON.parse(info_func());
+
                     info.innerHTML = `${crate_info.name} v${crate_info.version} <br> ${crate_info.author.join(", ")} <br> ${crate_info.description}`;
                 });
             }
@@ -624,3 +631,6 @@ function createModal(content, onMount) {
 
     return modal;
 }
+
+// 전역에 등록하여 ReferenceError 방지
+window.init_codemirror = init_codemirror;

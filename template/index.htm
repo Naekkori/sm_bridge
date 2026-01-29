@@ -4,27 +4,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>test</title>
+    <title>SevenMark Bridge Editor - Playground</title>
 </head>
 
 <body>
     <script type="module">
-        import init, { sm_editor_injecter } from "./sm_bridge.js";
+        import init, { sm_editor_injecter, cm_highlighter, sm_renderer, get_crate_info } from "./sm_bridge.js";
 
         async function run() {
             await init();
+            // 전역에서 editor_support.js 가 참조할 수 있도록 등록
+            window.cm_highlighter = cm_highlighter;
+            window.sm_renderer = sm_renderer;
+            window.get_crate_info = get_crate_info;
+
             sm_editor_injecter("editor-container");
             const savedCode = localStorage.getItem("code");
-            if (savedCode) {
-                const checkReady = setInterval(() => {
-                    if (savedCode && window.cm_instances && window.cm_instances.length > 0) {
-                        window.set_editor_text(savedCode);
-                        clearInterval(checkReady);
-                        console.log("로드됨");
-                    }
-                });
-
+            if (savedCode && window.cm_instances && window.cm_instances.length > 0) {
+                window.set_editor_text(savedCode);
             }
+
         }
         run();
         // 전역 추출 함수 정의
