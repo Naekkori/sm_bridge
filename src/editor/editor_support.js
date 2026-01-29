@@ -279,6 +279,10 @@ export function set_editor_text(text) {
     }
 }
 
+// 전역에서 접근할 수 있도록 window 객체에 등록
+window.get_editor_text = get_editor_text;
+window.set_editor_text = set_editor_text;
+
 function setup_toolbar(CM) {
     const { undo, redo, openSearchPanel, closeSearchPanel } = CM;
     const parent = document.getElementById("sm-editor-raw");
