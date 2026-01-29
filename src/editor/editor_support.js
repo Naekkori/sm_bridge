@@ -295,7 +295,7 @@ const TOOLBAR_CSS = `
     }
     .sm-render-block.highlight {
         background-color: rgba(90, 136, 206, 0.3) !important;
-        /* 인라인 요소이므로 border-radius는 좌우 끝에만 적용됨 */
+        width: 100%;
         transition: background-color 0.1s;
     }
 `;
@@ -399,26 +399,27 @@ export async function init_codemirror(parent, initialDoc = "") {
         }
 
         const { from, to } = update.state.selection.main;
-        // 편집하는곳 표시
-        if (from !== to) {
-            const previewBlocks = document.querySelectorAll(".sm-render-block");
-            previewBlocks.forEach(block => {
-                const start = parseInt(block.dataset.start);
-                const end = parseInt(block.dataset.end);
+        // 편집하는곳 표시 (선택 영역이 있거나 커서가 있는 경우 모두 지원)
+        const previewBlocks = document.querySelectorAll(".sm-render-block");
+        previewBlocks.forEach(block => {
+            const start = parseInt(block.dataset.start);
+            const end = parseInt(block.dataset.end);
 
-                const isOverlapping = Math.max(start, from) < Math.min(end, to);
-                const isCursorInside = (from === to) && (start <= from && end >= to);
-                if (isOverlapping || isCursorInside) {
-                    block.classList.add("highlight");
-                } else {
-                    block.classList.remove("highlight");
-                }
-            });
-        } else {
-            document.querySelectorAll(".sm-render-block.highlight").forEach(block => {
+            let shouldHighlight = false;
+            if (from !== to) {
+                // 영역 선택 시 중첩 확인
+                shouldHighlight = Math.max(start, from) < Math.min(end, to);
+            } else {
+                // 커서만 있을 때 해당 블록 안에 있는지 확인
+                shouldHighlight = (from >= start && from < end);
+            }
+
+            if (shouldHighlight) {
+                block.classList.add("highlight");
+            } else {
                 block.classList.remove("highlight");
-            });
-        }
+            }
+        });
     });
 
     const smHighlightField = create_sm_highlight_field(CM);

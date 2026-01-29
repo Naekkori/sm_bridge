@@ -32,7 +32,7 @@ pub fn sm_render_block(raw: &str) -> Vec<String> {
             let utf16_start = raw[..start].chars().map(|c| c.len_utf16()).sum::<usize>();
             let utf16_end = raw[..end].chars().map(|c| c.len_utf16()).sum::<usize>();
             format!(
-                "<span class=\"sm-render-block\" data-start=\"{}\" data-end=\"{}\">{}</span>",
+                "<div class=\"sm-render-block\" data-start=\"{}\" data-end=\"{}\">{}</div>",
                 utf16_start, utf16_end, html
             )
         })
