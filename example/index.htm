@@ -16,8 +16,15 @@
             await init();
             sm_editor_injecter("editor-container");
             const savedCode = localStorage.getItem("code");
-            if (savedCode && window.cm_instances && window.cm_instances.length > 0) {
-                window.set_editor_text(savedCode);
+            if (savedCode) {
+                const checkReady = setInterval(() => {
+                    if (savedCode && window.cm_instances && window.cm_instances.length > 0) {
+                        window.set_editor_text(savedCode);
+                        clearInterval(checkReady);
+                        console.log("로드됨");
+                    }
+                });
+
             }
         }
         run();
