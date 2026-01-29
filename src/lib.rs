@@ -22,10 +22,19 @@ pub fn sm_render_block(raw: &str) -> Vec<String> {
     //Ast 를 쪼개서 렌더링
     let doc = sevenmark_parser::core::parse_document(&raw);
     let conifg = RenderConfig::default();
+    //utf 16 으로 변환
     doc.iter()
         .map(move |node| {
             let html = sevenmark_html::render_document(&[node.clone()], &conifg);
-            html
+            let start = node.span().start;
+            let end = node.span().end;
+
+            let utf16_start = raw[..start].chars().map(|c| c.len_utf16()).sum::<usize>();
+            let utf16_end = raw[..end].chars().map(|c| c.len_utf16()).sum::<usize>();
+            format!(
+                "<span class=\"sm-render-block\" data-start=\"{}\" data-end=\"{}\">{}</span>",
+                utf16_start, utf16_end, html
+            )
         })
         .collect()
 }

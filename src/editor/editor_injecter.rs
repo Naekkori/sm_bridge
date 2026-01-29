@@ -18,7 +18,7 @@ pub fn inject(ed_container: &str, ed_height: Option<&str>) {
     root.style().set_property("display", "flex").ok();
     root.style().set_property("gap", "1rem").ok();
     root.style()
-        .set_property("min-height", ed_height.unwrap_or("600px"))
+        .set_property("height", ed_height.unwrap_or("600px"))
         .ok();
 
     // Raw 에디터 영역(Container) 생성

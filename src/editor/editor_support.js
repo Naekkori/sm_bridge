@@ -187,8 +187,9 @@ body.dark {
     --sm-separator: #3e3e42;
 }
 
-#sm-editor-raw { background: var(--sm-bg-editor); display: flex; flex-direction: column; }
+#sm-editor-raw { height: 100%; background: var(--sm-bg-editor); display: flex; flex-direction: column; }
 #sm-editor-preview { 
+    height: 100%;
     background: var(--sm-bg-editor); 
     color: var(--sm-color-text); 
     padding: 1rem; 
@@ -288,6 +289,15 @@ const TOOLBAR_CSS = `
         align-items: center;
         gap: 10px;
     }
+    /*블록하이라이팅 (프리뷰)*/
+    .sm-render-block {
+        display: inline; /* 인라인으로 설정하여 배경색이 끊김 없이 이어지도록 함 */
+    }
+    .sm-render-block.highlight {
+        background-color: rgba(90, 136, 206, 0.3) !important;
+        /* 인라인 요소이므로 border-radius는 좌우 끝에만 적용됨 */
+        transition: background-color 0.1s;
+    }
 `;
 
 // 테마 전환 헬퍼 함수
@@ -310,7 +320,12 @@ function loadEditorTheme() {
 // 전역에 등록
 window.setEditorTheme = setEditorTheme;
 window.loadEditorTheme = loadEditorTheme;
-
+var targetScroll = 0;
+var currentScroll = 0;
+var isRunning = false;
+var scrollSource = null; // 'editor' | 'preview'
+var lastSetTop = { editor: -1, preview: -1 };
+const lerpFactor = 0.2;
 export async function init_codemirror(parent, initialDoc = "") {
     const CM = await ensure_codemirror();
     const { EditorView, EditorState, basicSetup, undoDepth, redoDepth, openSearchPanel, closeSearchPanel } = CM;
@@ -343,7 +358,8 @@ export async function init_codemirror(parent, initialDoc = "") {
         if (update.docChanged || update.selectionSet) {
             const raw = update.state.doc.toString();
             const ast = JSON.parse(window.cm_highlighter(raw));
-            const html = (typeof sm_renderer !== 'undefined' ? sm_renderer : window.sm_renderer)(raw);
+            const htmlResult = (typeof sm_renderer !== 'undefined' ? sm_renderer : window.sm_renderer)(raw);
+            const html = Array.isArray(htmlResult) ? htmlResult.join("") : htmlResult;
             const { from, to } = update.state.selection.main;
 
             const activeType = findActiveType(ast, from, to);
@@ -351,7 +367,24 @@ export async function init_codemirror(parent, initialDoc = "") {
             updateToolbarButtons(activeType);
 
             const preview = document.getElementById("sm-editor-preview");
-            if (preview) preview.innerHTML = html;
+            if (preview) {
+                preview.innerHTML = html;
+                // 에디터 수정 시 프리뷰 위치 강제 동기화 (타이핑 시 프리뷰 따라오게)
+                if (scrollSource !== 'preview') {
+                    const scroller = update.view.scrollDOM;
+                    const maxEditor = scroller.scrollHeight - scroller.clientHeight;
+                    const maxPreview = preview.scrollHeight - preview.clientHeight;
+                    if (maxEditor > 0 && maxPreview > 0) {
+                        const percentage = scroller.scrollTop / maxEditor;
+                        targetScroll = percentage * maxPreview;
+                        if (!isRunning) {
+                            scrollSource = 'editor';
+                            currentScroll = preview.scrollTop;
+                            smoothScroll();
+                        }
+                    }
+                }
+            }
         }
         const undoBtn = document.getElementById("sm-editor-undo");
         const redoBtn = document.getElementById("sm-editor-redo");
@@ -363,6 +396,28 @@ export async function init_codemirror(parent, initialDoc = "") {
             const isSearchOpen = update.view.dom.querySelector(".cm-search");
             if (isSearchOpen) searchBtn.classList.add("active");
             else searchBtn.classList.remove("active");
+        }
+
+        const { from, to } = update.state.selection.main;
+        // 편집하는곳 표시
+        if (from !== to) {
+            const previewBlocks = document.querySelectorAll(".sm-render-block");
+            previewBlocks.forEach(block => {
+                const start = parseInt(block.dataset.start);
+                const end = parseInt(block.dataset.end);
+
+                const isOverlapping = Math.max(start, from) < Math.min(end, to);
+                const isCursorInside = (from === to) && (start <= from && end >= to);
+                if (isOverlapping || isCursorInside) {
+                    block.classList.add("highlight");
+                } else {
+                    block.classList.remove("highlight");
+                }
+            });
+        } else {
+            document.querySelectorAll(".sm-render-block.highlight").forEach(block => {
+                block.classList.remove("highlight");
+            });
         }
     });
 
@@ -381,7 +436,46 @@ export async function init_codemirror(parent, initialDoc = "") {
         }),
         parent: parent
     });
+    // 에디터 -> 프리뷰 동기화
+    const scroller = view.scrollDOM;
+    const preview = document.getElementById("sm-editor-preview");
 
+    scroller.addEventListener("scroll", () => {
+        // 우리가 코드로 옮긴 위치라면 무시 (에코 방지)
+        if (Math.abs(scroller.scrollTop - lastSetTop.editor) < 1) return;
+
+        scrollSource = 'editor';
+        const maxEditor = scroller.scrollHeight - scroller.clientHeight;
+        const maxPreview = preview.scrollHeight - preview.clientHeight;
+        if (maxEditor <= 0 || maxPreview <= 0) return;
+
+        const percentage = scroller.scrollTop / maxEditor;
+        targetScroll = percentage * maxPreview;
+
+        if (!isRunning) {
+            currentScroll = preview.scrollTop;
+            smoothScroll();
+        }
+    });
+
+    // 프리뷰 -> 에디터 동기화
+    preview.addEventListener("scroll", () => {
+        // 우리가 코드로 옮긴 위치라면 무시 (에코 방지)
+        if (Math.abs(preview.scrollTop - lastSetTop.preview) < 1) return;
+
+        scrollSource = 'preview';
+        const maxEditor = scroller.scrollHeight - scroller.clientHeight;
+        const maxPreview = preview.scrollHeight - preview.clientHeight;
+        if (maxEditor <= 0 || maxPreview <= 0) return;
+
+        const percentage = preview.scrollTop / maxPreview;
+        targetScroll = percentage * maxEditor;
+
+        if (!isRunning) {
+            currentScroll = scroller.scrollTop;
+            smoothScroll();
+        }
+    });
     window.cm_instances.push(view);
     setup_toolbar(CM);
 
@@ -397,7 +491,34 @@ export async function init_codemirror(parent, initialDoc = "") {
 
     return view;
 }
+function smoothScroll() {
+    const preview = document.getElementById("sm-editor-preview");
+    const scroller = (window.cm_instances && window.cm_instances.length > 0)
+        ? window.cm_instances[window.cm_instances.length - 1].scrollDOM
+        : null;
 
+    if (!scrollSource || !preview || !scroller) {
+        isRunning = false;
+        return;
+    }
+
+    const targetEl = scrollSource === 'editor' ? preview : scroller;
+    const targetKey = scrollSource === 'editor' ? 'preview' : 'editor';
+
+    if (Math.abs(targetScroll - currentScroll) < 0.5) {
+        currentScroll = targetScroll;
+        lastSetTop[targetKey] = currentScroll; // 우리가 설정한 값임을 기록
+        targetEl.scrollTop = currentScroll;
+        isRunning = false;
+        return;
+    }
+
+    isRunning = true;
+    currentScroll += (targetScroll - currentScroll) * lerpFactor;
+    lastSetTop[targetKey] = currentScroll; // 우리가 설정한 값임을 기록
+    targetEl.scrollTop = currentScroll;
+    requestAnimationFrame(smoothScroll);
+}
 export function get_editor_text() {
     if (window.cm_instances && window.cm_instances.length > 0) {
         return window.cm_instances[window.cm_instances.length - 1].state.doc.toString();
@@ -474,7 +595,6 @@ function setup_toolbar(CM) {
             onClick: () => toggleSyntax("{{{#quote\n", "\n}}}", "BlockQuote")
         }
     ];
-
     Buttons.forEach((button) => {
         if (button.id === "sm-separator") {
             const sep = document.createElement("div");
