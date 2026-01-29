@@ -1,3 +1,4 @@
+use serde::Serialize;
 use sevenmark_html::RenderConfig;
 use wasm_bindgen::prelude::*;
 use web_sys::console;
@@ -35,7 +36,30 @@ pub fn sm_editor_injecter(ed_container: &str) {
     editor::editor_injecter::inject(ed_container);
     console::log_1(&format!("Done.").into());
 }
-
+#[derive(Serialize)]
+pub struct CrateInfo {
+    pub name: String,
+    pub version: String,
+    pub author: Vec<String>,
+    pub description: String,
+}
+#[wasm_bindgen]
+pub fn get_crate_info() -> String {
+    let crate_name = env!("CARGO_PKG_NAME");
+    let crate_version = env!("CARGO_PKG_VERSION");
+    let create_author = env!("CARGO_PKG_AUTHORS");
+    let create_description = env!("CARGO_PKG_DESCRIPTION");
+    let crate_info = CrateInfo {
+        name: crate_name.to_string(),
+        version: crate_version.to_string(),
+        author: create_author
+            .split(',')
+            .map(|s| s.trim().to_string())
+            .collect(),
+        description: create_description.to_string(),
+    };
+    serde_json::to_string(&crate_info).unwrap()
+}
 #[wasm_bindgen(start)]
 pub fn start() {
     let window = web_sys::window().expect("no global window exists");

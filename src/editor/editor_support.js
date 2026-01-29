@@ -1,4 +1,4 @@
-import { sm_renderer, cm_highlighter } from "../../../../sm_bridge.js";
+import { sm_renderer, cm_highlighter, get_crate_info } from "../../../../sm_bridge.js";
 
 window.cm_instances = [];
 
@@ -126,7 +126,83 @@ var cm_css = `
     --sm-btn-disabled: #959da5;
     --sm-separator: #e1e4e8;
 }
-#sm-editor-raw { border-right: 1px solid var(--sm-border-editor); background: var(--sm-bg-editor); }
+
+/* 다크 테마 */
+body.dark {
+    --sm-bg-editor: #2b2b2b;
+    --sm-color-text: #e8e8e8;
+    --sm-border-editor: #3e3e42;
+    --sm-color-comment: #6a9955;
+    --sm-color-escape: #f48771;
+    --sm-color-error: #f14c4c;
+    --sm-bg-error: #5a1d1d;
+    --sm-deco-error: #f14c4c;
+    --sm-color-bold: #ffffff;
+    --sm-color-italic: #c586c0;
+    --sm-color-strike: #b392f0;
+    --sm-color-underline: #79b8ff;
+    --sm-color-script: #4fc1ff;
+    --sm-color-header: #569cd6;
+    --sm-border-header: #3e3e42;
+    --sm-color-quote: #9cdcfe;
+    --sm-border-quote: #3e3e42;
+    --sm-bg-quote: #252526;
+    --sm-border-hline: #3e3e42;
+    --sm-color-hardbreak: #569cd6;
+    --sm-color-code: #4ec9b0;
+    --sm-bg-code: #3c3c3c;
+    --sm-color-tex: #4fc1ff;
+    --sm-color-media: #4fc1ff;
+    --sm-color-extmedia: #79b8ff;
+    --sm-border-extmedia: #79b8ff;
+    --sm-color-category: #4ec9b0;
+    --sm-color-redirect: #ce9178;
+    --sm-color-include: #c586c0;
+    --sm-color-mention: #b392f0;
+    --sm-color-variable: #dcdcaa;
+    --sm-color-timenow: #4ec9b0;
+    --sm-bg-timenow: #1e3a32;
+    --sm-color-footnote: #808080;
+    --sm-color-null: #6a737d;
+    --sm-color-control: #f48771;
+    --sm-border-styled: #f48771;
+    --sm-color-literal: #ce9178;
+    --sm-bg-literal: #3c3c3c;
+    --sm-color-fold: #b392f0;
+    --sm-color-ruby: #c586c0;
+    --sm-border-table: #3e3e42;
+    --sm-bg-table: #252526;
+    --sm-bg-toolbar: #323232;
+    --sm-border-toolbar: #3e3e42;
+    --sm-shadow-toolbar: rgba(0,0,0,0.3);
+    --sm-btn-text: #cccccc;
+    --sm-btn-hover-bg: #3e3e42;
+    --sm-btn-hover-border: rgba(255,255,255,0.1);
+    --sm-btn-active-bg: #505050;
+    --sm-btn-disabled: #6a737d;
+    --sm-separator: #3e3e42;
+}
+
+#sm-editor-raw { background: var(--sm-bg-editor); display: flex; flex-direction: column; }
+#sm-editor-preview { 
+    background: var(--sm-bg-editor); 
+    color: var(--sm-color-text); 
+    padding: 1rem; 
+    overflow-y: auto; 
+    border-left: 1px solid var(--sm-border-editor);
+    flex: 1;
+}
+
+/* CodeMirror 에디터 배경 및 텍스트 색상 */
+.cm-editor { flex: 1; display: flex; flex-direction: column; background-color: var(--sm-bg-editor) !important; color: var(--sm-color-text) !important; }
+.cm-content { background-color: var(--sm-bg-editor) !important; color: var(--sm-color-text) !important; }
+.cm-line { color: var(--sm-color-text) !important; }
+.cm-cursor { border-left-color: var(--sm-color-text) !important; }
+.cm-selectionBackground { background-color: rgba(100, 150, 255, 0.3) !important; }
+.cm-gutters { background-color: var(--sm-bg-editor) !important; border-right: 1px solid var(--sm-border-editor) !important; }
+.cm-lineNumbers .cm-gutterElement { color: #858585 !important; }
+body.dark .cm-lineNumbers .cm-gutterElement { color: #858585 !important; }
+
 .cm-sm-Text { color: var(--sm-color-text); }
 .cm-sm-Comment { color: var(--sm-color-comment); font-style: italic; }
 .cm-sm-Escape { color: var(--sm-color-escape); font-weight: bold; }
@@ -137,7 +213,7 @@ var cm_css = `
 .cm-sm-Underline { color: var(--sm-color-underline); }
 .cm-sm-Superscript { font-size: 0.85em; color: var(--sm-color-script); }
 .cm-sm-Subscript { font-size: 0.85em; color: var(--sm-color-script); }
-.cm-sm-Header { color: var(--sm-color-header); font-weight: bold; border-bottom: 1px solid var(--sm-border-header); display: inline-block; width: 100%; }
+.cm-sm-Header { color: var(--sm-color-header); font-weight: bold; border-bottom: 1px solid var(--sm-border-header); }
 .cm-sm-BlockQuote { color: var(--sm-color-quote); border-left: 0.25em solid var(--sm-border-quote); padding-left: 0.5em; font-style: italic; background: var(--sm-bg-quote); }
 .cm-sm-HLine { display: block; border-top: 2px solid var(--sm-border-hline); margin: 4px 0; }
 .cm-sm-HardBreak { color: var(--sm-color-hardbreak); font-weight: bold; }
@@ -177,7 +253,7 @@ var cm_css = `
 `;
 
 const TOOLBAR_CSS = `
-    .sm_toolbar { background: var(--sm-bg-toolbar); border-bottom: 1px solid var(--sm-border-toolbar); padding: 6px 12px; display: flex; gap: 4px; align-items: center; border-top-left-radius: 6px; border-top-right-radius: 6px; box-shadow: 0 1px 2px var(--sm-shadow-toolbar); }
+    .sm_toolbar { background: var(--sm-bg-toolbar); border-bottom: 1px solid var(--sm-border-toolbar); padding: 6px 12px; display: flex; gap: 4px; align-items: center; border-top-left-radius: 6px; border-top-right-radius: 6px; box-shadow: 0 1px 2px var(--sm-shadow-toolbar); position: relative; }
     .sm_toolbar_btn { background: transparent; color: var(--sm-btn-text); border: 1px solid transparent; border-radius: 4px; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s cubic-bezier(0.3, 0, 0.5, 1); position: relative; }
     .sm_toolbar_btn .material-symbols-outlined { font-size: 20px; }
     .sm_toolbar_btn:hover:not(:disabled) { background-color: var(--sm-btn-hover-bg); border-color: var(--sm-btn-hover-border); color: var(--sm-color-text); transform: translateY(-0.5px); }
@@ -185,7 +261,43 @@ const TOOLBAR_CSS = `
     .sm_toolbar_btn:disabled { opacity: 0.4; cursor: not-allowed; color: var(--sm-btn-disabled); pointer-events: none; }
     .sm_toolbar_separator { width: 1px; height: 18px; background-color: var(--sm-separator); margin: 0 8px; align-self: center; border: none; }
     .sm_toolbar_right { margin-left: auto; display: flex; gap: 4px; align-items: center; }
+    
+    .sm_dropdown { position: relative; display: inline-block; }
+    .sm_dropdown_content { display: none; position: absolute; background-color: var(--sm-bg-toolbar); min-width: 160px; box-shadow: 0 8px 16px rgba(0,0,0,0.1); border: 1px solid var(--sm-border-toolbar); border-radius: 4px; z-index: 1000; top: 120%; left: 0; margin-top: 4px; }
+    .sm_dropdown.show .sm_dropdown_content { display: block; }
+    .sm_dropdown_item { color: var(--sm-color-text); padding: 8px 12px; text-decoration: none; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: background 0.2s; font-size: 0.9rem; white-space: nowrap; }
+    .sm_dropdown_item:hover { background-color: var(--sm-btn-hover-bg); }
+    .sm_dropdown_item .material-symbols-outlined { font-size: 18px; color: var(--sm-btn-text); }
+
+    /*툴바 팝업 (링크만들기, 유튜브영상 첨부 및 미리보기 등등)*/
+    .sm_modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 10000; }
+    .sm_modal_content { background-color: var(--sm-bg-toolbar); border-radius: 6px; padding: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border: 1px solid var(--sm-border-toolbar); position: relative; min-width: 300px; color: var(--sm-color-text); }
+    .sm_modal_content h3 { color: var(--sm-color-text); margin-top: 0; }
+    .sm_modal_content label { color: var(--sm-color-text); }
+    .sm_modal_close { position: absolute; top: 8px; right: 8px; cursor: pointer; font-size: 24px; color: var(--sm-btn-text); }
+    .sm_modal_close:hover { color: var(--sm-color-error); }
 `;
+
+// 테마 전환 헬퍼 함수
+function setEditorTheme(theme) {
+    document.body.classList.remove("dark", "light");
+    if (theme === "dark") {
+        document.body.classList.add("dark");
+    }
+    // light는 기본 :root 변수 사용
+    localStorage.setItem("sm-editor-theme", theme);
+}
+
+// 저장된 테마 불러오기
+function loadEditorTheme() {
+    const savedTheme = localStorage.getItem("sm-editor-theme") || "light";
+    setEditorTheme(savedTheme);
+    return savedTheme;
+}
+
+// 전역에 등록
+window.setEditorTheme = setEditorTheme;
+window.loadEditorTheme = loadEditorTheme;
 
 export async function init_codemirror(parent, initialDoc = "") {
     const CM = await ensure_codemirror();
@@ -259,7 +371,9 @@ export async function init_codemirror(parent, initialDoc = "") {
         const rBtn = document.getElementById("sm-editor-redo");
         if (uBtn) uBtn.disabled = undoDepth(view.state) === 0;
         if (rBtn) rBtn.disabled = redoDepth(view.state) === 0;
-        if (window.load_theme_preference) window.load_theme_preference();
+
+        // 저장된 테마 불러오기
+        loadEditorTheme();
     }, 0);
 
     return view;
@@ -284,9 +398,10 @@ window.get_editor_text = get_editor_text;
 window.set_editor_text = set_editor_text;
 
 function setup_toolbar(CM) {
-    const { undo, redo, openSearchPanel, closeSearchPanel } = CM;
+    const { openSearchPanel, closeSearchPanel, undo, redo } = CM;
     const parent = document.getElementById("sm-editor-raw");
     if (!parent || document.getElementById("sm-toolbar")) return;
+    parent.style.position = "relative"; // 모달을 위한 상대 좌표계 설정
 
     const toolbar = document.createElement("div");
     toolbar.id = "sm-toolbar";
@@ -300,9 +415,38 @@ function setup_toolbar(CM) {
         { id: "sm-toolbar-strike", className: "sm_toolbar_btn", text: "strikethrough_s", title: "취소선", onClick: () => wrapSelection("~~") },
         { id: "sm-toolbar-superscript", className: "sm_toolbar_btn", html: '<b>X<sup>2</sup></b>', title: "상위첨자", onClick: () => wrapSelection("^^") },
         { id: "sm-toolbar-subscript", className: "sm_toolbar_btn", html: '<b>X<sub>2</sub></b>', title: "하위첨자", onClick: () => wrapSelection(",,") },
+        { id: "sm-separator", className: "sm_toolbar_btn sm_toolbar_separator" },
+        {
+            id: "sm-toolbar-headings",
+            className: "sm_toolbar_btn",
+            text: "format_size",
+            title: "머릿말",
+            type: "dropdown",
+            options: [
+                { text: "제목 1 (가장 크게)", icon: "format_size", size: "1.5rem", onClick: () => wrapSelection("# ", "") },
+                { text: "제목 2 (크게)", icon: "format_size", size: "1.4rem", onClick: () => wrapSelection("## ", "") },
+                { text: "제목 3 (중간)", icon: "format_size", size: "1.3rem", onClick: () => wrapSelection("### ", "") },
+                { text: "제목 4 (작게)", icon: "format_size", size: "1.2rem", onClick: () => wrapSelection("#### ", "") },
+                { text: "제목 5 (더 작게)", icon: "format_size", size: "1.1rem", onClick: () => wrapSelection("##### ", "") },
+                { text: "제목 6 (가장 작게)", icon: "format_size", size: "1.0rem", onClick: () => wrapSelection("###### ", "") },
+            ]
+        },
     ];
 
     Buttons.forEach((button) => {
+        if (button.id === "sm-separator") {
+            const sep = document.createElement("div");
+            sep.className = "sm_toolbar_separator";
+            toolbar.appendChild(sep);
+            return;
+        }
+
+        if (button.type === "dropdown") {
+            const dropdown = create_dropdown(button);
+            toolbar.appendChild(dropdown);
+            return;
+        }
+
         const btn = document.createElement("button");
         btn.id = button.id;
         btn.className = button.className;
@@ -311,6 +455,52 @@ function setup_toolbar(CM) {
         btn.addEventListener("click", button.onClick);
         toolbar.appendChild(btn);
     });
+
+    // 드롭다운 생성 헬퍼
+    function create_dropdown(config) {
+        const container = document.createElement("div");
+        container.className = "sm_dropdown";
+
+        const btn = document.createElement("button");
+        btn.id = config.id;
+        btn.className = config.className;
+        btn.innerHTML = `<span class="material-symbols-outlined">${config.text}</span>`;
+        btn.title = config.title;
+
+        const content = document.createElement("div");
+        content.className = "sm_dropdown_content";
+
+        config.options.forEach(opt => {
+            const item = document.createElement("div");
+            item.className = "sm_dropdown_item";
+            item.innerHTML = `<span class="material-symbols-outlined" style="font-size: ${opt.size}">${opt.icon}</span> <span>${opt.text}</span>`;
+            item.addEventListener("click", () => {
+                opt.onClick();
+                container.classList.remove("show");
+            });
+            content.appendChild(item);
+        });
+
+        btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            document.querySelectorAll(".sm_dropdown").forEach(d => {
+                if (d !== container) d.classList.remove("show");
+            });
+            container.classList.toggle("show");
+        });
+
+        container.appendChild(btn);
+        container.appendChild(content);
+        return container;
+    }
+
+    // 외부 클릭 시 드롭다운 닫기
+    if (!window.sm_dropdown_listener_added) {
+        document.addEventListener("click", () => {
+            document.querySelectorAll(".sm_dropdown").forEach(d => d.classList.remove("show"));
+        });
+        window.sm_dropdown_listener_added = true;
+    }
 
     const rightToolbar = document.createElement("div");
     rightToolbar.className = "sm_toolbar_right";
@@ -338,10 +528,49 @@ function setup_toolbar(CM) {
                     view.focus();
                 }
             }
+        },
+        {
+            id: "sm-toolbar-settings", className: "sm_toolbar_btn", text: "settings", title: "설정",
+            onClick: () => {
+                const view = window.cm_instances[window.cm_instances.length - 1];
+                if (!view) return;
+
+                createModal(`
+                    <h3 style="margin-top:0">Editor Settings</h3>
+                    <div style="display:flex; flex-direction:column; gap:10px;">
+                        <label style="display:flex; justify-content:space-between; align-items:center;">
+                            테마: <select id="sm-editor-theme-select">
+                                <option value="light" ${!document.body.classList.contains('dark') ? 'selected' : ''}>Light</option>
+                                <option value="dark" ${document.body.classList.contains('dark') ? 'selected' : ''}>Dark</option>
+                            </select>
+                        </label>
+                        <div style="display:flex; gap:10px;">
+                            <span>정보<span>
+                            <br>
+                            <code id="sm-editor-info"></code>
+                        </div>
+                    </div>
+                `, (modal) => {
+                    const select = modal.querySelector("#sm-editor-theme-select");
+                    select.addEventListener("change", () => {
+                        const theme = select.value;
+                        window.setEditorTheme(theme);
+                    });
+                    const info = modal.querySelector("#sm-editor-info");
+                    let crate_info = JSON.parse(get_crate_info());
+                    info.innerHTML = `${crate_info.name} v${crate_info.version} <br> ${crate_info.author.join(", ")} <br> ${crate_info.description}`;
+                });
+            }
         }
     ];
 
     RightButtons.forEach((button) => {
+        if (button.id === "sm-separator") {
+            const sep = document.createElement("div");
+            sep.className = "sm_toolbar_separator";
+            rightToolbar.appendChild(sep);
+            return;
+        }
         const btn = document.createElement("button");
         btn.id = button.id;
         btn.className = button.className;
@@ -369,4 +598,29 @@ function wrapSelection(before, after = before) {
         });
     }
     view.focus();
+}
+
+function createModal(content, onMount) {
+    const sm_ed_area = document.getElementById("sm-editor-raw");
+    const modal = document.createElement("div");
+    modal.className = "sm_modal";
+    modal.innerHTML = `
+        <div class="sm_modal_content">
+            <span class="sm_modal_close">&times;</span>
+            ${content}
+        </div>
+    `;
+    const closeBtn = modal.querySelector(".sm_modal_close");
+    closeBtn.addEventListener("click", () => {
+        modal.remove();
+    });
+
+    sm_ed_area.appendChild(modal);
+
+    // 모달이 DOM에 추가된 후 실행할 콜백 (이벤트 리스너 등록 등)
+    if (typeof onMount === "function") {
+        onMount(modal);
+    }
+
+    return modal;
 }
