@@ -30,10 +30,10 @@ pub fn sm_render_block(raw: &str) -> Vec<String> {
         .collect()
 }
 #[wasm_bindgen]
-pub fn sm_editor_injecter(ed_container: &str) {
+pub fn sm_editor_injecter(ed_container: &str, ed_height: Option<String>) {
     console::log_1(&format!("{} - {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION")).into());
     console::log_1(&format!("Injecting editor to {}", ed_container).into());
-    editor::editor_injecter::inject(ed_container);
+    editor::editor_injecter::inject(ed_container, ed_height.as_deref());
     console::log_1(&format!("Done.").into());
 }
 #[derive(Serialize)]
