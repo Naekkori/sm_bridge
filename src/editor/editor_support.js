@@ -340,9 +340,15 @@ export async function init_codemirror(parent, initialDoc = "") {
     };
 
     const updateListener = EditorView.updateListener.of((update) => {
-        if (update.docChanged) {
+        if (update.docChanged || update.selectionSet) {
             const raw = update.state.doc.toString();
+            const ast = JSON.parse(window.cm_highlighter(raw));
             const html = (typeof sm_renderer !== 'undefined' ? sm_renderer : window.sm_renderer)(raw);
+            const { from, to } = update.state.selection.main;
+
+            const activeType = findActiveType(ast, from, to);
+
+            updateToolbarButtons(activeType);
 
             const preview = document.getElementById("sm-editor-preview");
             if (preview) preview.innerHTML = html;
@@ -422,12 +428,12 @@ function setup_toolbar(CM) {
     parent.prepend(toolbar);
 
     const Buttons = [
-        { id: "sm-toolbar-bold", className: "sm_toolbar_btn", text: "format_bold", title: "굵게", onClick: () => wrapSelection("**") },
-        { id: "sm-toolbar-italic", className: "sm_toolbar_btn", text: "format_italic", title: "이탤릭체", onClick: () => wrapSelection("*") },
-        { id: "sm-toolbar-underline", className: "sm_toolbar_btn", text: "format_underlined", title: "밑줄", onClick: () => wrapSelection("__") },
-        { id: "sm-toolbar-strike", className: "sm_toolbar_btn", text: "strikethrough_s", title: "취소선", onClick: () => wrapSelection("~~") },
-        { id: "sm-toolbar-superscript", className: "sm_toolbar_btn", html: '<b>X<sup>2</sup></b>', title: "상위첨자", onClick: () => wrapSelection("^^") },
-        { id: "sm-toolbar-subscript", className: "sm_toolbar_btn", html: '<b>X<sub>2</sub></b>', title: "하위첨자", onClick: () => wrapSelection(",,") },
+        { id: "sm-toolbar-bold", className: "sm_toolbar_btn", text: "format_bold", title: "굵게", onClick: () => toggleSyntax("**", "**", "Bold") },
+        { id: "sm-toolbar-italic", className: "sm_toolbar_btn", text: "format_italic", title: "이탤릭체", onClick: () => toggleSyntax("*", "*", "Italic") },
+        { id: "sm-toolbar-underline", className: "sm_toolbar_btn", text: "format_underlined", title: "밑줄", onClick: () => toggleSyntax("__", "__", "Underline") },
+        { id: "sm-toolbar-strike", className: "sm_toolbar_btn", text: "strikethrough_s", title: "취소선", onClick: () => toggleSyntax("~~", "~~", "Strikethrough") },
+        { id: "sm-toolbar-superscript", className: "sm_toolbar_btn", html: '<b>X<sup>2</sup></b>', title: "상위첨자", onClick: () => toggleSyntax("^^", "^^", "Superscript") },
+        { id: "sm-toolbar-subscript", className: "sm_toolbar_btn", html: '<b>X<sub>2</sub></b>', title: "하위첨자", onClick: () => toggleSyntax(",,", ",,", "Subscript") },
         { id: "sm-separator", className: "sm_toolbar_btn sm_toolbar_separator" },
         {
             id: "sm-toolbar-headings",
@@ -436,14 +442,37 @@ function setup_toolbar(CM) {
             title: "머릿말",
             type: "dropdown",
             options: [
-                { text: "제목 1 (가장 크게)", icon: "format_size", size: "1.5rem", onClick: () => wrapSelection("# ", "") },
-                { text: "제목 2 (크게)", icon: "format_size", size: "1.4rem", onClick: () => wrapSelection("## ", "") },
-                { text: "제목 3 (중간)", icon: "format_size", size: "1.3rem", onClick: () => wrapSelection("### ", "") },
-                { text: "제목 4 (작게)", icon: "format_size", size: "1.2rem", onClick: () => wrapSelection("#### ", "") },
-                { text: "제목 5 (더 작게)", icon: "format_size", size: "1.1rem", onClick: () => wrapSelection("##### ", "") },
-                { text: "제목 6 (가장 작게)", icon: "format_size", size: "1.0rem", onClick: () => wrapSelection("###### ", "") },
+                { text: "제목 1 (가장 크게)", icon: "format_size", size: "1.5rem", onClick: () => toggleSyntax("# ", "", "Header") },
+                { text: "제목 2 (크게)", icon: "format_size", size: "1.4rem", onClick: () => toggleSyntax("## ", "", "Header") },
+                { text: "제목 3 (중간)", icon: "format_size", size: "1.3rem", onClick: () => toggleSyntax("### ", "", "Header") },
+                { text: "제목 4 (작게)", icon: "format_size", size: "1.2rem", onClick: () => toggleSyntax("#### ", "", "Header") },
+                { text: "제목 5 (더 작게)", icon: "format_size", size: "1.1rem", onClick: () => toggleSyntax("##### ", "", "Header") },
+                { text: "제목 6 (가장 작게)", icon: "format_size", size: "1.0rem", onClick: () => toggleSyntax("###### ", "", "Header") },
             ]
         },
+        {
+            id: "sm-toolbar-hline",
+            className: "sm_toolbar_btn",
+            text: "horizontal_rule",
+            title: "가로선",
+            type: "dropdown",
+            options: [
+                { text: "가로선 3개", icon: "horizontal_rule", onClick: () => wrapSelection("---", "") },
+                { text: "가로선 4개", icon: "horizontal_rule", onClick: () => wrapSelection("----", "") },
+                { text: "가로선 5개", icon: "horizontal_rule", onClick: () => wrapSelection("-----", "") },
+                { text: "가로선 6개", icon: "horizontal_rule", onClick: () => wrapSelection("------", "") },
+                { text: "가로선 7개", icon: "horizontal_rule", onClick: () => wrapSelection("-------", "") },
+                { text: "가로선 8개", icon: "horizontal_rule", onClick: () => wrapSelection("--------", "") },
+                { text: "가로선 9개", icon: "horizontal_rule", onClick: () => wrapSelection("---------", "") },
+            ]
+        },
+        {
+            id: "sm-toolbar-quotes",
+            className: "sm_toolbar_btn",
+            text: "format_quote",
+            title: "인용",
+            onClick: () => toggleSyntax("{{{#quote\n", "\n}}}", "BlockQuote")
+        }
     ];
 
     Buttons.forEach((button) => {
@@ -618,7 +647,67 @@ function wrapSelection(before, after = before) {
     }
     view.focus();
 }
+function toggleSyntax(before, after, astType) {
+    const view = window.cm_instances[window.cm_instances.length - 1];
+    if (!view) return;
+    const { state } = view;
+    const { from, to } = state.selection.main;
+    const raw = state.doc.toString();
+    const ast = JSON.parse(window.cm_highlighter(raw));
 
+    // 현재 선택/커서 위치를 포함하는 해당 타입의 노드 찾기
+    const targetNode = findNodeByType(ast, from, to, astType);
+
+    if (targetNode) {
+        // 이미 해당 문법 노드 안에 있음 -> Unwrap (제거)
+        const start = targetNode.span.start;
+        const end = targetNode.span.end;
+        // 앞뒤 마커 길이를 제외한 순수 텍스트 추출
+        const content = raw.slice(start + before.length, end - after.length);
+
+        view.dispatch({
+            changes: { from: start, to: end, insert: content },
+            selection: { anchor: Math.max(start, from - before.length), head: Math.min(start + content.length, to - before.length) }
+        });
+    } else {
+        // 노드가 없음 -> Wrap (적용)
+        const selectedText = state.sliceDoc(from, to);
+        view.dispatch({
+            changes: { from, to, insert: `${before}${selectedText}${after}` },
+            selection: { anchor: from + before.length + (from === to ? 0 : selectedText.length) }
+        });
+    }
+    view.focus();
+}
+
+export function get_cm_ast() {
+    const view = window.cm_instances[window.cm_instances.length - 1];
+    if (!view) return;
+    const { state } = view;
+    const raw = state.doc.toString();
+    const ast = JSON.parse(window.cm_highlighter(raw));
+    return ast;
+}
+window.get_cm_ast = get_cm_ast;
+
+function findNodeByType(nodes, from, to, targetType) {
+    if (!nodes) return null;
+    for (const node of nodes) {
+        const type = Object.keys(node)[0];
+        const data = node[type];
+        if (data && data.span) {
+            // 선택 영역이 노드 범위 안에 완전히 포함되는지 확인
+            if (from >= data.span.start && to <= data.span.end) {
+                if (type === targetType) return data;
+                if (data.children) {
+                    const found = findNodeByType(data.children, from, to, targetType);
+                    if (found) return found;
+                }
+            }
+        }
+    }
+    return null;
+}
 function createModal(content, onMount) {
     const sm_ed_area = document.getElementById("sm-editor-raw");
     const modal = document.createElement("div");
@@ -643,6 +732,55 @@ function createModal(content, onMount) {
 
     return modal;
 }
+function findActiveType(nodes, from, to, activeSet = new Set()) {
+    if (!nodes) return activeSet;
+    for (const node of nodes) {
+        const type = Object.keys(node)[0];
+        const data = node[type];
 
+        if (data && data.span) {
+            // AST는 start, end를 사용하므로 수정
+            if (from >= data.span.start && to <= data.span.end) {
+                if (type !== "Text" && type !== "SoftBreak" && type !== "HardBreak") {
+                    activeSet.add(type);
+                }
+
+                if (data.children) {
+                    findActiveType(data.children, from, to, activeSet);
+                }
+            }
+        }
+    }
+    return activeSet;
+}
+
+function updateToolbarButtons(activeSet) {
+    const mapping = {
+        "Bold": "sm-toolbar-bold",
+        "Italic": "sm-toolbar-italic",
+        "Underline": "sm-toolbar-underline",
+        "Strikethrough": "sm-toolbar-strike",
+        "Superscript": "sm-toolbar-superscript",
+        "Subscript": "sm-toolbar-subscript",
+        "Header": "sm-toolbar-headings",
+        "BlockQuote": "sm-toolbar-quotes",
+        "HLine": "sm-toolbar-hline"
+    };
+
+    // 매핑된 모든 버튼 초기화
+    Object.values(mapping).forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.classList.remove("active");
+    });
+
+    // 활성화된 타입에 불 들어오게 하기
+    activeSet.forEach(type => {
+        const id = mapping[type];
+        if (id) {
+            const btn = document.getElementById(id);
+            if (btn) btn.classList.add("active");
+        }
+    });
+}
 // 전역에 등록하여 ReferenceError 방지
 window.init_codemirror = init_codemirror;
