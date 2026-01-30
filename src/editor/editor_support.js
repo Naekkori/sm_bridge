@@ -295,10 +295,17 @@ const TOOLBAR_CSS = `
         white-space: pre-wrap;
     }
     
-    /* 실제 블록 성격의 태그가 내부에 있을 때만 블록으로 전환 (:has 셀렉터 활용) */
-    .sm-render-block:has(h1, h2, h3, h4, h5, h6, blockquote, hr, pre, table) {
+    /* 블록 성격의 태그가 내부에 있을 때만 블록으로 전환 (:has 셀렉터 활용)
+       sevenmark-html에서 사용하는 블록 요소들을 모두 포함합니다. */
+    .sm-render-block:has(h1, h2, h3, h4, h5, h6, blockquote, hr, pre, table, ul, ol, details, div, figure, iframe) {
         display: block;
         width: 100%;
+    }
+    
+    /* summary 내부의 sm-render-block이 block이 되어 레이아웃을 깨뜨리는 것 방지 */
+    summary .sm-render-block {
+        display: inline !important;
+        width: auto !important;
     }
 
     /* Paragraph(p) 태그 등이 들어있을 때 줄바꿈과 DOM 파편화 방지를 위해 인라인화 */
@@ -312,6 +319,128 @@ const TOOLBAR_CSS = `
         background-color: rgba(90, 136, 206, 0.15) !important; /* 시인성을 위해 더 투명하게 */
         transition: background-color 0.1s;
         border-radius: 2px;
+    }
+    /* SevenMark Preview CSS (태그 기반 스타일링) */
+
+    .sm-render-block strong {
+        font-weight: bold;
+    }
+    .sm-render-block em {
+        font-style: italic;
+    }
+    .sm-render-block u {
+        text-decoration: underline;
+    }
+    .sm-render-block del {
+        text-decoration: line-through;
+    }
+    .sm-render-block code {
+        font-family: 'Courier New', Courier, monospace;
+        background-color: rgba(128, 128, 128, 0.1);
+        padding: 2px 4px;
+        border-radius: 3px;
+    }
+    .sm-render-block blockquote {
+        border-left: 4px solid #ccc;
+        padding-left: 15px;
+        margin: 10px 0;
+        color: #666;
+        font-style: italic;
+    }
+    .sm-render-block hr {
+        border: none;
+        border-top: 1px solid #ccc;
+        margin: 20px 0;
+    }
+    
+    /* 헤드라인 (클래스 기반) */
+    .sm-h1 { font-size: 1.8em; font-weight: bold; margin: 0.67em 0; }
+    .sm-h2 { font-size: 1.5em; font-weight: bold; margin: 0.75em 0; }
+    .sm-h3 { font-size: 1.25em; font-weight: bold; margin: 0.83em 0; }
+    .sm-h4 { font-size: 1.1em; font-weight: bold; margin: 1em 0; }
+    .sm-h5 { font-size: 1em; font-weight: bold; margin: 1em 0; }
+    .sm-h6 { font-size: 0.9em; font-weight: bold; margin: 1em 0; }
+
+    /* 테이블 */
+    .sm-table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 15px 0;
+    }
+    .sm-table th,
+    .sm-table td {
+        border: 1px solid #ddd;
+        padding: 10px;
+        text-align: left;
+    }
+    .sm-table th {
+        background-color: rgba(128, 128, 128, 0.1);
+        font-weight: bold;
+    }
+    .sm-table tr:nth-child(even) {
+        background-color: rgba(128, 128, 128, 0.03);
+    }
+    .sm-table tr:hover {
+        background-color: rgba(128, 128, 128, 0.08);
+    }
+    /* 섹션 및 접기 (details/summary) 스타일링 */
+    .sm-section, .sm-fold {
+        margin: 10px 0;
+        border: 1px solid transparent;
+        transition: all 0.2s;
+    }
+    .sm-section summary, .sm-fold summary {
+        list-style: none; /* 기본 화살표 숨기기 */
+        cursor: pointer;
+        outline: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 0;
+    }
+    /* Webkit 브라우저용 화살표 숨기기 */
+    .sm-section summary::-webkit-details-marker,
+    .sm-fold summary::-webkit-details-marker {
+        display: none;
+    }
+    
+    /* 기본 화살표 대신 커스텀 아이콘 (::before) */
+    .sm-section summary::before, .sm-fold summary::before {
+        content: '▶';
+        font-size: 0.8em;
+        transition: transform 0.2s ease;
+        color: #999;
+        display: inline-block;
+        width: 1.2em;
+        text-align: center;
+        flex-shrink: 0;
+    }
+    .sm-section[open] > summary::before, 
+    .sm-fold[open] > summary::before {
+        transform: rotate(90deg);
+    }
+    
+    /* summary 내부의 헤더 마진 제거하여 화살표와 수평 맞춤 */
+    .sm-section summary h1, 
+    .sm-section summary h2, 
+    .sm-section summary h3, 
+    .sm-section summary h4, 
+    .sm-section summary h5, 
+    .sm-section summary h6 {
+        display: inline;
+        margin: 0 !important;
+        padding: 0;
+    }
+
+    .sm-section-content {
+        padding-left: 20px;
+        margin-left: 5px;
+        border-left: 1px solid rgba(128, 128, 128, 0.1);
+    }
+    
+    .sm-section:hover {
+        background-color: rgba(128, 128, 128, 0.02);
+        border-radius: 4px;
     }
 `;
 
@@ -372,9 +501,16 @@ export async function init_codemirror(parent, initialDoc = "") {
     const updateListener = EditorView.updateListener.of((update) => {
         if (update.docChanged || update.selectionSet) {
             const raw = update.state.doc.toString();
-            const ast = JSON.parse(window.cm_highlighter(raw));
-            const htmlResult = (typeof sm_renderer !== 'undefined' ? sm_renderer : window.sm_renderer)(raw);
-            const html = Array.isArray(htmlResult) ? htmlResult.join("") : htmlResult;
+            const highlighter = (typeof cm_highlighter !== 'undefined' ? cm_highlighter : window.cm_highlighter);
+            const renderer = (typeof sm_render_block !== 'undefined' ? sm_render_block : window.sm_render_block);
+
+            if (typeof highlighter !== 'function' || typeof renderer !== 'function') {
+                console.warn("SevenMark WASM functions not yet available.");
+                return;
+            }
+
+            const ast = JSON.parse(highlighter(raw));
+            const html = renderer(raw);
             const { from, to } = update.state.selection.main;
 
             const activeType = findActiveType(ast, from, to);

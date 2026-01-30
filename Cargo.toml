@@ -42,6 +42,7 @@ wasm-bindgen = { workspace = true }
 console_error_panic_hook = "0.1"
 serde.workspace = true
 serde_json.workspace = true
+maud.workspace = true
 
 [dependencies.web-sys]
 workspace = true

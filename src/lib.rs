@@ -18,25 +18,12 @@ pub fn sm_codemirror_doc(raw: &str) -> String {
     sevenmark_transform::convert_ast_to_utf16_offset_json(&doc, &raw)
 }
 #[wasm_bindgen]
-pub fn sm_render_block(raw: &str) -> Vec<String> {
-    //Ast 를 쪼개서 렌더링
+pub fn sm_render_block(raw: &str) -> String {
     let doc = sevenmark_parser::core::parse_document(&raw);
-    let conifg = RenderConfig::default();
-    //utf 16 으로 변환
-    doc.iter()
-        .map(move |node| {
-            let html = sevenmark_html::render_document(&[node.clone()], &conifg);
-            let start = node.span().start;
-            let end = node.span().end;
+    let config = RenderConfig::default();
 
-            let utf16_start = raw[..start].chars().map(|c| c.len_utf16()).sum::<usize>();
-            let utf16_end = raw[..end].chars().map(|c| c.len_utf16()).sum::<usize>();
-            format!(
-                "<span class=\"sm-render-block\" data-start=\"{}\" data-end=\"{}\">{}</span>",
-                utf16_start, utf16_end, html
-            )
-        })
-        .collect()
+    let tree = crate::editor::section::build_section_tree(&doc);
+    crate::editor::section::render_section_tree(&tree, raw, &config)
 }
 #[wasm_bindgen]
 pub fn sm_editor_injecter(ed_container: &str, ed_height: Option<String>) {
