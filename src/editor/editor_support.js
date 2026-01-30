@@ -98,7 +98,6 @@ var cm_css = `
     --sm-border-hline: #e1e4e8;
     --sm-color-hardbreak: #0366d6;
     --sm-color-code: #218b99;
-    --sm-bg-code: #f3f3f3;
     --sm-color-tex: #005cc5;
     --sm-color-media: #005cc5;
     --sm-color-extmedia: #0652dd;
@@ -154,7 +153,6 @@ body.dark {
     --sm-border-hline: #3e3e42;
     --sm-color-hardbreak: #569cd6;
     --sm-color-code: #4ec9b0;
-    --sm-bg-code: #3c3c3c;
     --sm-color-tex: #4fc1ff;
     --sm-color-media: #4fc1ff;
     --sm-color-extmedia: #79b8ff;
@@ -224,7 +222,7 @@ body.dark .cm-lineNumbers .cm-gutterElement { color: #858585 !important; }
 .cm-sm-BlockQuote { color: var(--sm-color-quote); border-left: 0.25em solid var(--sm-border-quote); padding-left: 0.5em; font-style: italic; background: var(--sm-bg-quote); }
 .cm-sm-HLine { display: block; border-top: 2px solid var(--sm-border-hline); margin: 4px 0; }
 .cm-sm-HardBreak { color: var(--sm-color-hardbreak); font-weight: bold; }
-.cm-sm-Code { color: var(--sm-color-code); font-family: 'Fira Code', 'Cascadia Code', monospace; background: var(--sm-bg-code); border-radius: 3px; }
+.cm-sm-Code { color: var(--sm-color-code); font-family: 'Fira Code', 'Cascadia Code', monospace; border-radius: 3px; }
 .cm-sm-TeX { color: var(--sm-color-tex); font-weight: bold; }
 .cm-sm-Media { color: var(--sm-color-media); text-decoration: underline; }
 .cm-sm-ExternalMedia { color: var(--sm-color-extmedia); border-bottom: 1px dashed var(--sm-border-extmedia); }
@@ -334,12 +332,46 @@ const TOOLBAR_CSS = `
     .sm-render-block del {
         text-decoration: line-through;
     }
+    /*
     .sm-render-block code {
         font-family: 'Courier New', Courier, monospace;
         background-color: rgba(128, 128, 128, 0.1);
         padding: 2px 4px;
         border-radius: 3px;
+    }*/
+    .sm-code {
+        font-family: 'Courier New', Courier, monospace;
+        position: relative;
+        padding: 0.4rem;
+        border-radius: 6px;
+        background-color: rgba(128, 128, 128, 0.1);
     }
+    .sm-code code[data-lang]::before {
+        content: attr(data-lang);
+        position: absolute;
+        top: -20px;
+        right: 8px;
+        font-size: 0.8rem;
+        font-family: 'Courier New', Courier, monospace;
+        color: var(--sm-color-text);
+        text-transform: uppercase;
+        font-weight: bold;
+        pointer-events: none;
+    }
+    .sm-render-block blockquote {
+        border-left: 4px solid #ccc;
+        padding-left: 15px;
+        margin: 10px 0;
+        color: #666;
+        font-style: italic;
+    }
+    .sm-render-block hr {
+        border: none;
+        border-top: 1px solid #ccc;
+        margin: 20px 0;
+    }
+    
+    /* 헤드라인 (클래스 기반) */
     .sm-render-block blockquote {
         border-left: 4px solid #ccc;
         padding-left: 15px;
@@ -789,6 +821,13 @@ function setup_toolbar(CM) {
             text: "format_quote",
             title: "인용",
             onClick: () => toggleSyntax("{{{#quote\n", "\n}}}", "BlockQuote")
+        },
+        {
+            id: "sm-toolbar-code",
+            className: "sm_toolbar_btn",
+            text: "code",
+            title: "코드",
+            onClick: () => toggleSyntax("{{{#code #lang=\"/*이 문장 지우고 표시할 언어 적기 예: rust, python, javascript 등등*/\"\n", "\n}}}", "Code")
         }
     ];
     Buttons.forEach((button) => {
