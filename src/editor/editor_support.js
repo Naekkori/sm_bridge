@@ -290,9 +290,6 @@ const TOOLBAR_CSS = `
         gap: 10px;
     }
     /*블록하이라이팅 (프리뷰)*/
-    .sm-render-block {
-        display: inline; /* 인라인으로 설정하여 배경색이 끊김 없이 이어지도록 함 */
-    }
     .sm-render-block.highlight {
         background-color: rgba(90, 136, 206, 0.3) !important;
         width: 100%;
