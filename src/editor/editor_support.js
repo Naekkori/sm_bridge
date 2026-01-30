@@ -14,8 +14,8 @@ async function ensure_codemirror() {
     const [
         { EditorView, basicSetup },
         { EditorState, StateField },
-        { Decoration },
-        { undoDepth, redoDepth, undo, redo },
+        { Decoration, keymap },
+        { undoDepth, redoDepth, undo, redo, indentWithTab },
         { openSearchPanel, closeSearchPanel }
     ] = await Promise.all([
         import("codemirror"),
@@ -26,10 +26,10 @@ async function ensure_codemirror() {
     ]);
 
     CM = {
-        EditorView, basicSetup,
+        EditorView, basicSetup, keymap,
         EditorState, StateField,
         Decoration,
-        undoDepth, redoDepth, undo, redo,
+        undoDepth, redoDepth, undo, redo, indentWithTab,
         openSearchPanel, closeSearchPanel
     };
     return CM;
@@ -553,6 +553,193 @@ const cm_styles = `
     .hidden {
         display: none;
     }
+
+    /* 테이블 생성 모달 전용 스타일 */
+    #table-preview {
+        margin-top: 15px;
+        display: flex;
+        flex-direction: column;
+        gap: 1px; /* 선 굵기 느낌 */
+        max-height: 250px;
+        overflow: auto;
+        padding: 1px;
+        background: var(--sm-border-editor); /* 선 색상 */
+        border: 1px solid var(--sm-border-editor);
+        border-radius: 4px;
+    }
+    .table-row-preview {
+        display: flex;
+        gap: 1px;
+    }
+    .table-cell-preview {
+        flex: 1;
+        min-width: 60px;
+        background: var(--sm-bg-editor);
+        display: flex;
+    }
+    .table-cell-input {
+        width: 100%;
+        border: none !important;
+        background: transparent !important;
+        color: var(--sm-color-text);
+        padding: 6px 4px;
+        font-size: 0.8rem;
+        outline: none;
+        text-align: center;
+        font-family: inherit;
+    }
+    .table-cell-input:focus {
+        background: rgba(51, 146, 255, 0.1) !important;
+    }
+    /* 첫 번째 줄(헤더) 특별 강조 */
+    .table-row-preview:first-child .table-cell-preview {
+        background: var(--sm-bg-toolbar);
+    }
+    .table-row-preview:first-child .table-cell-input {
+        font-weight: bold;
+        color: var(--sm-color-header);
+    }
+    .sm_modal_content input[type=number] {
+        width: 80px;
+        padding: 6px;
+        margin-bottom: 10px;
+        border: 1px solid var(--sm-border-editor);
+        border-radius: 4px;
+        background: var(--sm-bg-toolbar);
+        color: var(--sm-color-text);
+        font-family: inherit;
+    }
+    .sm_modal_content .sm_modal_label {
+        display: inline-block;
+        width: 40px;
+        font-size: 0.9rem;
+    }
+
+    /* 탭 스타일 */
+    .sm_modal_tabs {
+        display: flex;
+        gap: 10px;
+        border-bottom: 1px solid var(--sm-border-editor);
+        margin-bottom: 15px;
+    }
+    .sm_modal_tab {
+        padding: 8px 16px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        color: var(--sm-btn-text);
+        border-bottom: 2px solid transparent;
+        transition: all 0.2s;
+    }
+    .sm_modal_tab:hover {
+        color: var(--sm-color-text);
+    }
+    .sm_modal_tab.active {
+        color: var(--sm-color-header);
+        border-bottom-color: var(--sm-color-header);
+        font-weight: bold;
+    }
+    .sm_modal_tab_content {
+        display: none;
+    }
+    .sm_modal_tab_content.active {
+        display: block;
+    }
+
+    /* 설정 모달 전용 스타일 */
+    .sm_settings_row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        gap: 15px;
+    }
+    .sm_settings_label {
+        font-weight: 500;
+        font-size: 0.95rem;
+        color: var(--sm-color-text);
+        flex: 1;
+    }
+    .sm_settings_value {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 140px;
+        justify-content: flex-end;
+    }
+    .sm_settings_select {
+        padding: 5px 10px;
+        border-radius: 4px;
+        background: var(--sm-bg-editor);
+        color: var(--sm-color-text);
+        border: 1px solid var(--sm-border-editor);
+        outline: none;
+        cursor: pointer;
+        font-family: inherit;
+    }
+    .sm_settings_range {
+        -webkit-appearance: none;
+        width: 100px;
+        height: 4px;
+        background: var(--sm-border-editor);
+        border-radius: 2px;
+        outline: none;
+    }
+    .sm_settings_range::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 16px;
+        height: 16px;
+        background: var(--sm-color-header);
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .sm_settings_info_box {
+        background: var(--sm-bg-toolbar);
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 10px;
+        border: 1px solid var(--sm-border-editor);
+    }
+    .sm_settings_info_header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 10px;
+    }
+    .sm_settings_info_logo {
+        width: 42px;
+        height: 42px;
+        border-radius: 6px;
+        object-fit: cover;
+    }
+    .sm_settings_info_title {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: var(--sm-color-header);
+    }
+    .sm_settings_info_content {
+        font-size: 0.85rem;
+        line-height: 1.5;
+        color: var(--sm-color-text);
+        opacity: 0.8;
+        font-family: 'JetBrains Mono', monospace;
+    }
+
+    .sm_modal_create_btn {
+        width: 100%;
+        margin-top: 15px;
+        padding: 10px;
+        background: #3392FF;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: background 0.2s;
+    }
+    .sm_modal_create_btn:hover {
+        background: #2b7acc;
+    }
 `;
 // 테마 전환 헬퍼 함수
 function setEditorTheme(theme) {
@@ -582,7 +769,7 @@ var lastSetTop = { editor: -1, preview: -1 };
 const lerpFactor = 0.2;
 export async function init_codemirror(parent, initialDoc = "") {
     const CM = await ensure_codemirror();
-    const { EditorView, EditorState, basicSetup, undoDepth, redoDepth, openSearchPanel, closeSearchPanel } = CM;
+    const { EditorView, EditorState, basicSetup, keymap, undoDepth, redoDepth, indentWithTab, openSearchPanel, closeSearchPanel } = CM;
 
     const style = document.createElement("style");
     style.textContent = cm_css;
@@ -724,7 +911,8 @@ export async function init_codemirror(parent, initialDoc = "") {
                 updateListener,
                 EditorState.phrases.of(koPhrases),
                 fixedHeightEditor,
-                smHighlightField
+                smHighlightField,
+                keymap.of([indentWithTab])
             ]
         }),
         parent: parent
@@ -767,6 +955,21 @@ export async function init_codemirror(parent, initialDoc = "") {
         if (!isRunning) {
             currentScroll = scroller.scrollTop;
             smoothScroll();
+        }
+    });
+
+    // 프리뷰 클릭 시 에디터 커서 이동 (역방향 동기화)
+    preview.addEventListener("click", (e) => {
+        const target = e.target.closest("[data-start]");
+        if (target) {
+            const pos = parseInt(target.getAttribute("data-start"));
+            if (!isNaN(pos)) {
+                view.dispatch({
+                    selection: { anchor: pos, head: pos },
+                    scrollIntoView: true
+                });
+                view.focus();
+            }
         }
     });
     window.cm_instances.push(view);
@@ -932,7 +1135,41 @@ function setup_toolbar(CM) {
             className: "sm_toolbar_btn",
             text: "code",
             title: "코드",
-            onClick: () => toggleSyntax("{{{#code #lang=\"/*이 문장 지우고 표시할 언어 적기 예: rust, python, javascript 등등*/\"\n", "\n}}}", "Code")
+            onClick: () => toggleSyntax("{{{#code #lang=\"javascript\"\n", "\n}}}", "Code")
+        },
+        {
+            id: "sm-toolbar-folder",
+            className: "sm_toolbar_btn",
+            text: "folder",
+            title: "폴드(접을수 있는 영역)",
+            onClick: () => toggleSyntax("{{{#fold\n[[여기에 요약 텍스트 입력]]\n[[여기에 내용 입력]]\n", "}}}", "Fold")
+        },
+        {
+            id: "sm-toolbar-list",
+            className: " sm_toolbar_btn",
+            text: "format_list_numbered",
+            title: "리스트",
+            type: "dropdown",
+            options: [
+                { text: "번호 리스트", icon: "format_list_numbered", onClick: () => toggleSyntax("{{{#list #1\n[[항목 1]]\n[[항목 2]]\n[[항목 3]]\n", "}}}", "List") },
+                { text: "소문자 abc", icon: "format_list_bulleted", onClick: () => toggleSyntax("{{{#list #a\n[[항목 1]]\n[[항목 2]]\n[[항목 3]]\n", "}}}", "List") },
+                { text: "대문자 ABC", icon: "format_list_bulleted", onClick: () => toggleSyntax("{{{#list #A\n[[항목 1]]\n[[항목 2]]\n[[항목 3]]\n", "}}}", "List") },
+                { text: "로마숫자 (소문자)", icon: "format_list_bulleted", onClick: () => toggleSyntax("{{{#list #i\n[[항목 1]]\n[[항목 2]]\n[[항목 3]]\n", "}}}", "List") },
+                { text: "로마숫자 (대문자)", icon: "format_list_bulleted", onClick: () => toggleSyntax("{{{#list #I\n[[항목 1]]\n[[항목 2]]\n[[항목 3]]\n", "}}}", "List") },
+            ]
+        },
+        {
+            id: "sm-separator",
+            className: "sm_toolbar_separator"
+        },
+        {
+            id: "sm-toolbar-table",
+            className: "sm_toolbar_btn",
+            text: "table_chart",
+            title: "테이블",
+            onClick: () => {
+                makingTableModal();
+            }
         }
     ];
     Buttons.forEach((button) => {
@@ -1039,44 +1276,66 @@ function setup_toolbar(CM) {
                 if (!view) return;
 
                 createModal(`
-                    <h3 style="margin-top:0">Editor Settings</h3>
-                    <div style="display:flex; flex-direction:column; gap:10px;">
-                        <label style="display:flex; justify-content:space-between; align-items:center;">
-                            테마: <select id="sm-editor-theme-select">
-                                <option value="light" ${!document.body.classList.contains('dark') ? 'selected' : ''}>Light</option>
-                                <option value="dark" ${document.body.classList.contains('dark') ? 'selected' : ''}>Dark</option>
-                            </select>
-                        </label>
-                        <label style="display:flex; justify-content:space-between; align-items:center;">
-                            폰트 크기: <input type="range" id="sm-editor-font-size" min="8" max="24" value="${getEditorFontSize()}"> <span id="fnt-size">${getEditorFontSize()}pt</span>
-                        </label>
-                        <hr style="width: 100%; border: 0; border-top: 1px solid var(--sm-border-editor); margin: 5px 0;">
-                        <div style="display:flex; flex-direction:column; gap:5px; margin-top:10px;">
-                            <div class="sm-editor-logo">
-                                <img src="${smBridgeLogo}" alt="sm_bridge_logo" style="width: 50px; height: 50px;">
-                                <span style="font-size: 25pt;">SM Bridge</span>
+                    <h3 style="margin-bottom:20px; border-bottom: 2px solid var(--sm-color-header); padding-bottom: 10px;">Editor Settings</h3>
+                    <div style="display:flex; flex-direction:column; gap:5px;">
+                        
+                        <div class="sm_settings_row">
+                            <span class="sm_settings_label">에디터 테마</span>
+                            <div class="sm_settings_value">
+                                <select id="sm-editor-theme-select" class="sm_settings_select">
+                                    <option value="light" ${!document.body.classList.contains('dark') ? 'selected' : ''}>Light Mode</option>
+                                    <option value="dark" ${document.body.classList.contains('dark') ? 'selected' : ''}>Dark Mode</option>
+                                </select>
                             </div>
-                            <code id="sm-editor-info" style="padding-left: 60px; opacity: 0.8;"></code>
+                        </div>
+
+                        <div class="sm_settings_row">
+                            <span class="sm_settings_label">기본 폰트 크기</span>
+                            <div class="sm_settings_value">
+                                <input type="range" id="sm-editor-font-size" class="sm_settings_range" min="8" max="24" value="${getEditorFontSize()}">
+                                <span id="fnt-size" style="min-width: 35px; text-align: right;">${getEditorFontSize()}pt</span>
+                            </div>
+                        </div>
+
+                        <div class="sm_settings_info_box">
+                            <div class="sm_settings_info_header">
+                                <img src="${smBridgeLogo}" alt="logo" class="sm_settings_info_logo">
+                                <span class="sm_settings_info_title">SM Bridge</span>
+                            </div>
+                            <div id="sm-editor-info" class="sm_settings_info_content">
+                                <!-- Info dynamically loaded -->
+                            </div>
                         </div>
                     </div>
                 `, (modal) => {
                     const select = modal.querySelector("#sm-editor-theme-select");
                     select.addEventListener("change", () => {
-                        const theme = select.value;
-                        window.setEditorTheme(theme);
+                        window.setEditorTheme(select.value);
                     });
-                    const fontSize = modal.querySelector("#sm-editor-font-size");
-                    fontSize.addEventListener("input", (e) => {
-                        const span = modal.querySelector("#fnt-size");
-                        document.documentElement.style.setProperty("--sm-editor-font-size", `${e.target.value}pt`);
-                        setEditorFontSize(e.target.value);
-                        span.textContent = `${e.target.value}pt`;
-                    });
-                    const info = modal.querySelector("#sm-editor-info");
-                    const info_func = typeof get_crate_info !== 'undefined' ? get_crate_info : window.get_crate_info;
-                    let crate_info = JSON.parse(info_func());
 
-                    info.innerHTML = `${crate_info.name} v${crate_info.version} <br> ${crate_info.author.join(", ")} <br> ${crate_info.description}`;
+                    const fontSizeInput = modal.querySelector("#sm-editor-font-size");
+                    const fontSizeDisplay = modal.querySelector("#fnt-size");
+
+                    fontSizeInput.addEventListener("input", (e) => {
+                        const size = e.target.value;
+                        document.documentElement.style.setProperty("--sm-editor-font-size", `${size}pt`);
+                        setEditorFontSize(size);
+                        fontSizeDisplay.textContent = `${size}pt`;
+                    });
+
+                    const infoContainer = modal.querySelector("#sm-editor-info");
+                    const infoFunc = typeof get_crate_info !== 'undefined' ? get_crate_info : window.get_crate_info;
+
+                    try {
+                        const crateInfo = JSON.parse(infoFunc());
+                        infoContainer.innerHTML = `
+                            <strong>Version:</strong> ${crateInfo.version}<br>
+                            <strong>Authors:</strong> ${crateInfo.author.join(", ")}<br>
+                            <strong>About:</strong> ${crateInfo.description}
+                        `;
+                    } catch (err) {
+                        infoContainer.textContent = "Information unavailable.";
+                    }
                 });
             }
         }
@@ -1259,6 +1518,140 @@ function setEditorFontSize(fontSize) {
 }
 function getEditorFontSize() {
     return localStorage.getItem("sm-font-size") || "12";
+}
+function makingTableModal() {
+    const modalContent = `
+            <h3>테이블 생성</h3>
+            <div class="sm_modal_tabs">
+                <div class="sm_modal_tab active" data-tab="manual">직접 생성</div>
+                <div class="sm_modal_tab" data-tab="file">파일 불러오기</div>
+            </div>
+
+            <!-- 직접 생성 탭 -->
+            <div id="tab-manual" class="sm_modal_tab_content active">
+                <div style="margin-bottom: 10px;">
+                    <div style="margin-bottom: 5px;">
+                        <label class="sm_modal_label">행:</label> <input type="number" id="table-rows" value="3" min="1" max="50">
+                    </div>
+                    <div>
+                        <label class="sm_modal_label">열:</label> <input type="number" id="table-cols" value="3" min="1" max="20">
+                    </div>
+                </div>
+                <div id="table-preview"></div>
+                <button id="create-table-btn" class="sm_modal_create_btn">테이블 삽입</button>
+            </div>
+
+            <!-- 파일 불러오기 탭 (나중에 구현) -->
+            <div id="tab-file" class="sm_modal_tab_content">
+                <div style="padding: 20px 0; text-align: center;">
+                    <p style="opacity: 0.7; margin-bottom: 15px;">CSV 또는 엑셀 파일을 업로드하여 테이블로 변환합니다.</p>
+                    <input type="file" id="table-file-input" accept=".csv, .xlsx, .xls" style="display: none;">
+                    <button class="sm_modal_create_btn" onclick="document.getElementById('table-file-input').click()">파일 선택</button>
+                    <p id="file-name-display" style="margin-top: 10px; font-size: 0.85rem; color: var(--sm-color-header);"></p>
+                </div>
+                <button id="import-table-btn" class="sm_modal_create_btn" disabled>파일로 생성 (준비중)</button>
+            </div>
+    `;
+
+    createModal(modalContent, (modal) => {
+        const tabs = modal.querySelectorAll(".sm_modal_tab");
+        const contents = modal.querySelectorAll(".sm_modal_tab_content");
+
+        // 탭 전환 로직
+        tabs.forEach(tab => {
+            tab.addEventListener("click", () => {
+                tabs.forEach(t => t.classList.remove("active"));
+                contents.forEach(c => c.classList.remove("active"));
+
+                tab.classList.add("active");
+                modal.querySelector(`#tab-${tab.dataset.tab}`).classList.add("active");
+            });
+        });
+
+        // 직접 생성 로직
+        const rowsInput = modal.querySelector("#table-rows");
+        const colsInput = modal.querySelector("#table-cols");
+        const preview = modal.querySelector("#table-preview");
+        const createBtn = modal.querySelector("#create-table-btn");
+
+        const updatePreview = () => {
+            const rows = parseInt(rowsInput.value) || 0;
+            const cols = parseInt(colsInput.value) || 0;
+            preview.innerHTML = "";
+
+            const displayRows = Math.min(rows, 10);
+            const displayCols = Math.min(cols, 10);
+
+            for (let i = 0; i < displayRows; i++) {
+                const row = document.createElement("div");
+                row.className = "table-row-preview";
+                for (let j = 0; j < displayCols; j++) {
+                    const input = document.createElement("input");
+                    input.type = "text";
+                    input.className = "table-cell-input";
+                    input.value = (i === 0) ? `헤더 ${j + 1}` : "";
+                    input.dataset.row = i;
+                    input.dataset.col = j;
+                    const cell = document.createElement("div");
+                    cell.className = "table-cell-preview";
+                    cell.appendChild(input);
+                    row.appendChild(cell);
+                }
+                preview.appendChild(row);
+            }
+            if (rows > 10 || cols > 10) {
+                const notice = document.createElement("div");
+                notice.style.fontSize = "0.8rem";
+                notice.style.marginTop = "5px";
+                notice.style.opacity = "0.7";
+                notice.textContent = `* 프리뷰는 10x10까지만 표시됩니다. (현재: ${rows}x${cols})`;
+                preview.appendChild(notice);
+            }
+        };
+
+        rowsInput.addEventListener("input", updatePreview);
+        colsInput.addEventListener("input", updatePreview);
+        updatePreview();
+
+        createBtn.addEventListener("click", () => {
+            const rows = parseInt(rowsInput.value) || 1;
+            const cols = parseInt(colsInput.value) || 1;
+
+            let tableText = "{{{#table\n";
+            for (let i = 0; i < rows; i++) {
+                tableText += "[[";
+                for (let j = 0; j < cols; j++) {
+                    const input = modal.querySelector(`.table-cell-input[data-row="${i}"][data-col="${j}"]`);
+                    const value = input ? input.value : "";
+                    tableText += `[[ ${value} ]] `;
+                }
+                tableText += "]]\n";
+            }
+            tableText += "}}}";
+
+            const view = window.cm_instances[window.cm_instances.length - 1];
+            if (view) {
+                const { from, to } = view.state.selection.main;
+                view.dispatch({
+                    changes: { from, to, insert: tableText },
+                    selection: { anchor: from + tableText.length }
+                });
+                view.focus();
+            }
+            modal.remove();
+        });
+
+        // 파일 업로드 관련 (placeholder)
+        const fileInput = modal.querySelector("#table-file-input");
+        const fileNameDisplay = modal.querySelector("#file-name-display");
+        if (fileInput) {
+            fileInput.addEventListener("change", (e) => {
+                if (e.target.files.length > 0) {
+                    fileNameDisplay.textContent = `선택된 파일: ${e.target.files[0].name}`;
+                }
+            });
+        }
+    });
 }
 // 전역에 등록하여 ReferenceError 방지
 window.init_codemirror = init_codemirror;
