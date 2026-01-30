@@ -290,10 +290,28 @@ const TOOLBAR_CSS = `
         gap: 10px;
     }
     /*블록하이라이팅 (프리뷰)*/
+    .sm-render-block {
+        display: inline; /* 기본적으로 인라인 흐름 유지 */
+        white-space: pre-wrap;
+    }
+    
+    /* 실제 블록 성격의 태그가 내부에 있을 때만 블록으로 전환 (:has 셀렉터 활용) */
+    .sm-render-block:has(h1, h2, h3, h4, h5, h6, blockquote, hr, pre, table) {
+        display: block;
+        width: 100%;
+    }
+
+    /* Paragraph(p) 태그 등이 들어있을 때 줄바꿈과 DOM 파편화 방지를 위해 인라인화 */
+    .sm-render-block > p {
+        display: inline;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
     .sm-render-block.highlight {
-        background-color: rgba(90, 136, 206, 0.3) !important;
-        /* 인라인 요소이므로 border-radius는 좌우 끝에만 적용됨 */
+        background-color: rgba(90, 136, 206, 0.15) !important; /* 시인성을 위해 더 투명하게 */
         transition: background-color 0.1s;
+        border-radius: 2px;
     }
 `;
 
@@ -364,10 +382,13 @@ export async function init_codemirror(parent, initialDoc = "") {
             updateToolbarButtons(activeType);
 
             const preview = document.getElementById("sm-editor-preview");
-            if (preview) {
+            if (preview && update.docChanged) {
                 preview.innerHTML = html;
-                // 에디터 수정 시 프리뷰 위치 강제 동기화 (타이핑 시 프리뷰 따라오게)
-                if (scrollSource !== 'preview') {
+            }
+
+            if (preview) {
+                // 에디터 수정 시 프리뷰 위치 강제 동기화 (내용 변경 시에만)
+                if (update.docChanged && scrollSource !== 'preview') {
                     const scroller = update.view.scrollDOM;
                     const maxEditor = scroller.scrollHeight - scroller.clientHeight;
                     const maxPreview = preview.scrollHeight - preview.clientHeight;
@@ -396,26 +417,26 @@ export async function init_codemirror(parent, initialDoc = "") {
         }
 
         const { from, to } = update.state.selection.main;
-        // 편집하는곳 표시
-        if (from !== to) {
-            const previewBlocks = document.querySelectorAll(".sm-render-block");
-            previewBlocks.forEach(block => {
-                const start = parseInt(block.dataset.start);
-                const end = parseInt(block.dataset.end);
+        const previewBlocks = document.querySelectorAll(".sm-render-block");
+        previewBlocks.forEach(block => {
+            const start = parseInt(block.dataset.start);
+            const end = parseInt(block.dataset.end);
 
-                const isOverlapping = Math.max(start, from) < Math.min(end, to);
-                const isCursorInside = (from === to) && (start <= from && end >= to);
-                if (isOverlapping || isCursorInside) {
-                    block.classList.add("highlight");
-                } else {
-                    block.classList.remove("highlight");
-                }
-            });
-        } else {
-            document.querySelectorAll(".sm-render-block.highlight").forEach(block => {
+            let shouldHighlight = false;
+            if (from !== to) {
+                // 영역 선택 시 중첩 확인
+                shouldHighlight = Math.max(start, from) < Math.min(end, to);
+            } else {
+                // 커서 위치 하이라이트 (원하시면 주석 해제)
+                // shouldHighlight = (from >= start && from < end);
+            }
+
+            if (shouldHighlight) {
+                block.classList.add("highlight");
+            } else {
                 block.classList.remove("highlight");
-            });
-        }
+            }
+        });
     });
 
     const smHighlightField = create_sm_highlight_field(CM);
