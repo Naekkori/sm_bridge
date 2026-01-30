@@ -202,8 +202,8 @@ body.dark {
 .cm-line { color: var(--sm-color-text) !important; }
 .cm-cursor { border-left-color: var(--sm-color-text) !important; }
 .cm-selectionBackground, .cm-focused .cm-selectionBackground { background-color: #3392FF44 !important; }
-.cm-selectionMatch { background-color: #3392FF22 !important; }
-.cm-activeLine { background-color: #88888811 !important; }
+.cm-selectionMatch { background-color: transparent !important; }
+.cm-activeLine { background-color: transparent !important; }
 .cm-gutters { background-color: var(--sm-bg-editor) !important; border-right: 1px solid var(--sm-border-editor) !important; }
 .cm-lineNumbers .cm-gutterElement { color: #858585 !important; }
 body.dark .cm-lineNumbers .cm-gutterElement { color: #858585 !important; }
@@ -211,7 +211,7 @@ body.dark .cm-lineNumbers .cm-gutterElement { color: #858585 !important; }
 .cm-sm-Text { color: var(--sm-color-text); }
 .cm-sm-Comment { color: var(--sm-color-comment); font-style: italic; }
 .cm-sm-Escape { color: var(--sm-color-escape); font-weight: bold; }
-.cm-sm-Error { color: var(--sm-color-error); background-color: var(--sm-bg-error); text-decoration: underline wavy var(--sm-deco-error); }
+.cm-sm-Error { color: var(--sm-color-error); text-decoration: underline wavy var(--sm-deco-error); }
 .cm-sm-Bold { font-weight: bold; color: var(--sm-color-bold); }
 .cm-sm-Italic { font-style: italic; color: var(--sm-color-italic); }
 .cm-sm-Strikethrough { color: var(--sm-color-strike); }
@@ -219,7 +219,7 @@ body.dark .cm-lineNumbers .cm-gutterElement { color: #858585 !important; }
 .cm-sm-Superscript { font-size: 0.85em; color: var(--sm-color-script); }
 .cm-sm-Subscript { font-size: 0.85em; color: var(--sm-color-script); }
 .cm-sm-Header { color: var(--sm-color-header); font-weight: bold; border-bottom: 1px solid var(--sm-border-header); }
-.cm-sm-BlockQuote { color: var(--sm-color-quote); border-left: 0.25em solid var(--sm-border-quote); padding-left: 0.5em; font-style: italic; background: var(--sm-bg-quote); }
+.cm-sm-BlockQuote { color: var(--sm-color-quote); border-left: 0.25em solid var(--sm-border-quote); padding-left: 0.5em; font-style: italic; }
 .cm-sm-HLine { display: block; border-top: 2px solid var(--sm-border-hline); margin: 4px 0; }
 .cm-sm-HardBreak { color: var(--sm-color-hardbreak); font-weight: bold; }
 .cm-sm-Code { color: var(--sm-color-code); font-family: 'Fira Code', 'Cascadia Code', monospace; border-radius: 3px; }
@@ -231,15 +231,15 @@ body.dark .cm-lineNumbers .cm-gutterElement { color: #858585 !important; }
 .cm-sm-Include { color: var(--sm-color-include); font-weight: 500; }
 .cm-sm-Mention { color: var(--sm-color-mention); font-weight: bold; }
 .cm-sm-Variable { color: var(--sm-color-variable); font-family: monospace; }
-.cm-sm-Age, .cm-sm-TimeNow { color: var(--sm-color-timenow); background: var(--sm-bg-timenow); }
+.cm-sm-Age, .cm-sm-TimeNow { color: var(--sm-color-timenow); }
 .cm-sm-FootnoteRef, .cm-sm-Footnote { color: var(--sm-color-footnote); font-size: 0.9em; }
 .cm-sm-Null { color: var(--sm-color-null); text-decoration: line-through; }
 .cm-sm-If, .cm-sm-Define { color: var(--sm-color-control); font-weight: bold; }
 .cm-sm-Styled { border: 1px solid var(--sm-border-styled); border-radius: 4px; padding: 0 2px; }
-.cm-sm-Literal { background: var(--sm-bg-literal); color: var(--sm-color-literal); }
+.cm-sm-Literal { color: var(--sm-color-literal); }
 .cm-sm-Fold { color: var(--sm-color-fold); font-weight: bold; }
 .cm-sm-Ruby { color: var(--sm-color-ruby); border-bottom: 1px dotted var(--sm-color-ruby); }
-.cm-sm-Table { border: 1px solid var(--sm-border-table); background: var(--sm-bg-table); }
+.cm-sm-Table { border: 1px solid var(--sm-border-table); }
 .cm-panel.cm-search { background: var(--sm-bg-toolbar) !important; border-top: 1px solid var(--sm-border-toolbar); border-bottom: 1px solid var(--sm-border-toolbar); align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); font-size: 0.9rem; font-family: inherit; position: relative; max-width: 100%; }
 .cm-panel.cm-search br { display: block; width: 100%; height: 0; margin: 4px 0; content: ""; }
 .cm-panel.cm-search::-webkit-scrollbar { height: 4px; }
@@ -314,9 +314,8 @@ const TOOLBAR_CSS = `
     }
 
     .sm-render-block.highlight {
-        background-color: rgba(90, 136, 206, 0.15) !important; /* 시인성을 위해 더 투명하게 */
+        background-color: rgba(90, 136, 206, 0.2);
         transition: background-color 0.1s;
-        border-radius: 2px;
     }
     /* SevenMark Preview CSS (태그 기반 스타일링) */
 
