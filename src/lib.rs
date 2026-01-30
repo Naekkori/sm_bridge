@@ -1,5 +1,6 @@
 use serde::Serialize;
 use sevenmark_html::RenderConfig;
+use sevenmark_utils::convert_ast_to_utf16_offset_json;
 use wasm_bindgen::prelude::*;
 use web_sys::console;
 
@@ -8,22 +9,14 @@ mod editor;
 #[wasm_bindgen]
 pub fn sm_renderer(raw: &str) -> String {
     let doc = sevenmark_parser::core::parse_document(&raw);
-    let html = sevenmark_html::render_document(&doc, &RenderConfig::default());
+    let html = sevenmark_html::render_document_with_spans(&doc, &RenderConfig::default(), raw);
     html
 }
 
 #[wasm_bindgen]
 pub fn sm_codemirror_doc(raw: &str) -> String {
     let doc = sevenmark_parser::core::parse_document(&raw);
-    sevenmark_transform::convert_ast_to_utf16_offset_json(&doc, &raw)
-}
-#[wasm_bindgen]
-pub fn sm_render_block(raw: &str) -> String {
-    let doc = sevenmark_parser::core::parse_document(&raw);
-    let config = RenderConfig::default();
-
-    let tree = crate::editor::section::build_section_tree(&doc);
-    crate::editor::section::render_section_tree(&tree, raw, &config)
+    convert_ast_to_utf16_offset_json(&doc, &raw)
 }
 #[wasm_bindgen]
 pub fn sm_editor_injecter(ed_container: &str, ed_height: Option<String>) {
@@ -100,6 +93,6 @@ pub fn start() {
 #[wasm_bindgen]
 pub fn cm_highlighter(raw: &str) -> String {
     let doc = sevenmark_parser::core::parse_document(&raw);
-    let converted_cm_doc = sevenmark_transform::convert_ast_to_utf16_offset_json(&doc, &raw);
+    let converted_cm_doc = convert_ast_to_utf16_offset_json(&doc, &raw);
     converted_cm_doc
 }

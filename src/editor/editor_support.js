@@ -287,48 +287,23 @@ const TOOLBAR_CSS = `
         align-items: center;
         gap: 10px;
     }
-    /*블록하이라이팅 (프리뷰)*/
-    .sm-render-block {
-        display: inline; /* 기본적으로 인라인 흐름 유지 */
-        white-space: pre-wrap;
-    }
-    
-    /* 블록 성격의 태그가 내부에 있을 때만 블록으로 전환 (:has 셀렉터 활용)
-       sevenmark-html에서 사용하는 블록 요소들을 모두 포함합니다. */
-    .sm-render-block:has(h1, h2, h3, h4, h5, h6, blockquote, hr, pre, table, ul, ol, details, div, figure, iframe) {
-        display: block;
-        width: 100%;
-    }
-    
-    /* summary 내부의 sm-render-block이 block이 되어 레이아웃을 깨뜨리는 것 방지 */
-    summary .sm-render-block {
-        display: inline !important;
-        width: auto !important;
-    }
-
-    /* Paragraph(p) 태그 등이 들어있을 때 줄바꿈과 DOM 파편화 방지를 위해 인라인화 */
-    .sm-render-block > p {
-        display: inline;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-
-    .sm-render-block.highlight {
+    /* 하이라이팅 (프력뷰) */
+    .highlight {
         background-color: rgba(90, 136, 206, 0.2);
         transition: background-color 0.1s;
     }
     /* SevenMark Preview CSS (태그 기반 스타일링) */
 
-    .sm-render-block strong {
+    #sm-editor-preview strong {
         font-weight: bold;
     }
-    .sm-render-block em {
+    #sm-editor-preview em {
         font-style: italic;
     }
-    .sm-render-block u {
+    #sm-editor-preview u {
         text-decoration: underline;
     }
-    .sm-render-block del {
+    #sm-editor-preview del {
         text-decoration: line-through;
     }
     /*
@@ -357,28 +332,14 @@ const TOOLBAR_CSS = `
         font-weight: bold;
         pointer-events: none;
     }
-    .sm-render-block blockquote {
+    #sm-editor-preview blockquote {
         border-left: 4px solid #ccc;
         padding-left: 15px;
         margin: 10px 0;
         color: #666;
         font-style: italic;
     }
-    .sm-render-block hr {
-        border: none;
-        border-top: 1px solid #ccc;
-        margin: 20px 0;
-    }
-    
-    /* 헤드라인 (클래스 기반) */
-    .sm-render-block blockquote {
-        border-left: 4px solid #ccc;
-        padding-left: 15px;
-        margin: 10px 0;
-        color: #666;
-        font-style: italic;
-    }
-    .sm-render-block hr {
+    #sm-editor-preview hr {
         border: none;
         border-top: 1px solid #ccc;
         margin: 20px 0;
@@ -575,7 +536,7 @@ export async function init_codemirror(parent, initialDoc = "") {
         if (update.docChanged || update.selectionSet) {
             const raw = update.state.doc.toString();
             const highlighter = (typeof cm_highlighter !== 'undefined' ? cm_highlighter : window.cm_highlighter);
-            const renderer = (typeof sm_render_block !== 'undefined' ? sm_render_block : window.sm_render_block);
+            const renderer = (typeof sm_renderer !== 'undefined' ? sm_renderer : window.sm_renderer);
 
             if (typeof highlighter !== 'function' || typeof renderer !== 'function') {
                 console.warn("SevenMark WASM functions not yet available.");
@@ -591,28 +552,47 @@ export async function init_codemirror(parent, initialDoc = "") {
             updateToolbarButtons(activeType);
 
             const preview = document.getElementById("sm-editor-preview");
-            if (preview && update.docChanged) {
+            if (!preview) return;
+
+            if (update.docChanged) {
                 preview.innerHTML = html;
             }
 
-            if (preview) {
-                // 에디터 수정 시 프리뷰 위치 강제 동기화 (내용 변경 시에만)
-                if (update.docChanged && scrollSource !== 'preview') {
-                    const scroller = update.view.scrollDOM;
-                    const maxEditor = scroller.scrollHeight - scroller.clientHeight;
-                    const maxPreview = preview.scrollHeight - preview.clientHeight;
-                    if (maxEditor > 0 && maxPreview > 0) {
-                        const percentage = scroller.scrollTop / maxEditor;
-                        targetScroll = percentage * maxPreview;
-                        if (!isRunning) {
-                            scrollSource = 'editor';
-                            currentScroll = preview.scrollTop;
-                            smoothScroll();
-                        }
+            // 프리뷰 하이라이트 동기화
+            const previewBlocks = preview.querySelectorAll("[data-start]");
+            previewBlocks.forEach(block => {
+                const start = parseInt(block.dataset.start);
+                const end = parseInt(block.dataset.end);
+
+                let shouldHighlight = false;
+                if (from !== to) {
+                    shouldHighlight = Math.max(start, from) < Math.min(end, to);
+                }
+
+                if (shouldHighlight) {
+                    block.classList.add("highlight");
+                } else {
+                    block.classList.remove("highlight");
+                }
+            });
+
+            // 스크롤 동기화 (내용 변경 시)
+            if (update.docChanged && scrollSource !== 'preview') {
+                const scroller = update.view.scrollDOM;
+                const maxEditor = scroller.scrollHeight - scroller.clientHeight;
+                const maxPreview = preview.scrollHeight - preview.clientHeight;
+                if (maxEditor > 0 && maxPreview > 0) {
+                    const percentage = scroller.scrollTop / maxEditor;
+                    targetScroll = percentage * maxPreview;
+                    if (!isRunning) {
+                        scrollSource = 'editor';
+                        currentScroll = preview.scrollTop;
+                        smoothScroll();
                     }
                 }
             }
         }
+
         const undoBtn = document.getElementById("sm-editor-undo");
         const redoBtn = document.getElementById("sm-editor-redo");
         if (undoBtn) undoBtn.disabled = undoDepth(update.state) === 0;
@@ -624,28 +604,6 @@ export async function init_codemirror(parent, initialDoc = "") {
             if (isSearchOpen) searchBtn.classList.add("active");
             else searchBtn.classList.remove("active");
         }
-
-        const { from, to } = update.state.selection.main;
-        const previewBlocks = document.querySelectorAll(".sm-render-block");
-        previewBlocks.forEach(block => {
-            const start = parseInt(block.dataset.start);
-            const end = parseInt(block.dataset.end);
-
-            let shouldHighlight = false;
-            if (from !== to) {
-                // 영역 선택 시 중첩 확인
-                shouldHighlight = Math.max(start, from) < Math.min(end, to);
-            } else {
-                // 커서 위치 하이라이트 (원하시면 주석 해제)
-                // shouldHighlight = (from >= start && from < end);
-            }
-
-            if (shouldHighlight) {
-                block.classList.add("highlight");
-            } else {
-                block.classList.remove("highlight");
-            }
-        });
     });
 
     const smHighlightField = create_sm_highlight_field(CM);

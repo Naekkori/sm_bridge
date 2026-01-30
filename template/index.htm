@@ -9,13 +9,13 @@
 
 <body>
     <script type="module">
-        import init, { sm_editor_injecter, cm_highlighter, sm_render_block, get_crate_info } from "./sm_bridge.js";
+        import init, { sm_editor_injecter, cm_highlighter, sm_renderer, get_crate_info } from "./sm_bridge.js";
 
         async function run() {
             await init();
             // 전역에서 editor_support.js 가 참조할 수 있도록 등록
             window.cm_highlighter = cm_highlighter;
-            window.sm_render_block = sm_render_block;
+            window.sm_renderer = sm_renderer;
             window.get_crate_info = get_crate_info;
 
             sm_editor_injecter("editor-container");

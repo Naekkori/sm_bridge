@@ -5,47 +5,19 @@ edition = "2024"
 description = "SevenMark Renderer And WYSIWYG Engine"
 license = "MIT"
 authors = ["Naekkori"]
-[workspace]
-members = ["crates/*"]
-
-[workspace.package]
-version = "0.1.0"
-edition = "2024"
-authors = ["Naekkori"]
-license = "MIT"
-repository = "https://github.com/Naekkori/sm_bridge"
-rust-version = "1.85"
-
-[workspace.dependencies]
-# Internal member crates
-sevenmark-parser = { path = "crates/sevenmark-parser" }
-sevenmark-transform = { path = "crates/sevenmark-transform" }
-sevenmark-html = { path = "crates/sevenmark-html" }
-
-# Shared external dependencies
-maud = "0.27.0"
-winnow = "0.7.14"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-anyhow = "1.0"
-wasm-bindgen = "0.2.108"
-web-sys = "0.3.85"
-js-sys = "0.3.85"
-paste = "1.0"
-line-span = "0.1"
 
 [dependencies]
-sevenmark-parser = { workspace = true, features = ["include_locations"] }
-sevenmark-transform = { workspace = true }
-sevenmark-html = { workspace = true }
-wasm-bindgen = { workspace = true }
+sevenmark-parser = { version = "2.20.5", features = ["include_locations"] }
+sevenmark-html = "2.20.5"
+sevenmark-utils = "2.20.5"
+wasm-bindgen = "0.2.108"
 console_error_panic_hook = "0.1"
-serde.workspace = true
-serde_json.workspace = true
-maud.workspace = true
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+maud = "0.27.0"
 
 [dependencies.web-sys]
-workspace = true
+version = "0.3.85"
 features = [
     "Document",
     "Element",
