@@ -354,12 +354,13 @@ const TOOLBAR_CSS = `
     }
     
     /* 헤드라인 (클래스 기반) */
-    .sm-h1 { font-size: 1.8em; font-weight: bold; margin: 0.67em 0; }
-    .sm-h2 { font-size: 1.5em; font-weight: bold; margin: 0.75em 0; }
-    .sm-h3 { font-size: 1.25em; font-weight: bold; margin: 0.83em 0; }
-    .sm-h4 { font-size: 1.1em; font-weight: bold; margin: 1em 0; }
-    .sm-h5 { font-size: 1em; font-weight: bold; margin: 1em 0; }
-    .sm-h6 { font-size: 0.9em; font-weight: bold; margin: 1em 0; }
+    /* 에디터 내부 헤더: 마진이 있으면 줄 번호 정렬이 틀어짐 */
+    .sm-h1 { font-size: 1.8em; font-weight: bold; margin: 0; }
+    .sm-h2 { font-size: 1.5em; font-weight: bold; margin: 0; }
+    .sm-h3 { font-size: 1.25em; font-weight: bold; margin: 0; }
+    .sm-h4 { font-size: 1.1em; font-weight: bold; margin: 0; }
+    .sm-h5 { font-size: 1em; font-weight: bold; margin: 0; }
+    .sm-h6 { font-size: 0.9em; font-weight: bold; margin: 0; }
 
     /* 테이블 */
     .sm-table {
@@ -443,7 +444,41 @@ const TOOLBAR_CSS = `
         border-radius: 4px;
     }
 `;
+const cm_styles = `
+    :root {
+        --sm-editor-font-size: 14pt; /* 기본값 */
+    }
 
+    .cm-editor {
+        font-size: var(--sm-editor-font-size) !important;
+        font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    }
+    
+    /* 에디터의 개별 라인 높이를 고정하여 헤더 크기에 상관없이 정렬 유지 */
+    .cm-line {
+        line-height: 1.6 !important;
+        display: flex !important;
+        align-items: center; /* 텍스트가 큰 경우 중앙 정렬 */
+    }
+
+    .cm-gutters {
+        font-size: var(--sm-editor-font-size) !important;
+        font-family: inherit !important;
+        border-right: 1px solid var(--sm-border-editor);
+        background-color: transparent !important;
+    }
+    
+    .cm-gutter-line {
+        line-height: 1.6 !important; /* cm-line과 정확히 일치시켜야 함 */
+        display: flex !important;
+        align-items: center;
+        justify-content: flex-end;
+    }
+
+    .cm-gutterElement {
+        opacity: 0.5;
+    }
+`;
 // 테마 전환 헬퍼 함수
 function setEditorTheme(theme) {
     document.body.classList.remove("dark", "light");
@@ -482,11 +517,18 @@ export async function init_codemirror(parent, initialDoc = "") {
     toolbar_style.textContent = TOOLBAR_CSS;
     document.head.appendChild(toolbar_style);
 
+    const cm_style = document.createElement("style");
+    cm_style.textContent = cm_styles;
+    document.head.appendChild(cm_style);
+
     const googleFont = document.createElement("link");
     googleFont.href = "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@400;500;600;700&display=swap";
     googleFont.rel = "stylesheet";
     document.head.appendChild(googleFont);
 
+    //폰트사이즈로드
+    const fontSize = localStorage.getItem("sm-editor-font-size") || "12";
+    document.documentElement.style.setProperty("--sm-editor-font-size", `${fontSize}pt`);
     const fixedHeightEditor = EditorView.theme({
         "&": { height: "100%" },
         "& .cm-scroller": { overflow: "auto" }
@@ -861,6 +903,9 @@ function setup_toolbar(CM) {
                                 <option value="dark" ${document.body.classList.contains('dark') ? 'selected' : ''}>Dark</option>
                             </select>
                         </label>
+                        <label style="display:flex; justify-content:space-between; align-items:center;">
+                            폰트 크기: <input type="range" id="sm-editor-font-size" min="8" max="24" value="${getEditorFontSize()}"> <span id="fnt-size">${getEditorFontSize()}pt</span>
+                        </label>
                         <hr style="width: 100%; border: 0; border-top: 1px solid var(--sm-border-editor); margin: 5px 0;">
                         <div style="display:flex; flex-direction:column; gap:5px; margin-top:10px;">
                             <div class="sm-editor-logo">
@@ -875,6 +920,13 @@ function setup_toolbar(CM) {
                     select.addEventListener("change", () => {
                         const theme = select.value;
                         window.setEditorTheme(theme);
+                    });
+                    const fontSize = modal.querySelector("#sm-editor-font-size");
+                    fontSize.addEventListener("input", (e) => {
+                        const span = modal.querySelector("#fnt-size");
+                        document.documentElement.style.setProperty("--sm-editor-font-size", `${e.target.value}pt`);
+                        setEditorFontSize(e.target.value);
+                        span.textContent = `${e.target.value}pt`;
                     });
                     const info = modal.querySelector("#sm-editor-info");
                     const info_func = typeof get_crate_info !== 'undefined' ? get_crate_info : window.get_crate_info;
@@ -1055,6 +1107,14 @@ function updateToolbarButtons(activeSet) {
             if (btn) btn.classList.add("active");
         }
     });
+}
+
+function setEditorFontSize(fontSize) {
+    document.documentElement.style.setProperty("--sm-editor-font-size", `${fontSize}pt`);
+    localStorage.setItem("sm-font-size", fontSize);
+}
+function getEditorFontSize() {
+    return localStorage.getItem("sm-font-size") || "12";
 }
 // 전역에 등록하여 ReferenceError 방지
 window.init_codemirror = init_codemirror;
