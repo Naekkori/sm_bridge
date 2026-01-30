@@ -195,18 +195,6 @@ body.dark {
     flex: 1;
 }
 
-/* CodeMirror 에디터 배경 및 텍스트 색상 */
-.cm-editor { flex: 1; display: flex; min-height: 0; flex-direction: column; background-color: var(--sm-bg-editor) !important; color: var(--sm-color-text) !important; }
-.cm-content { color: var(--sm-color-text) !important; }
-.cm-line { color: var(--sm-color-text) !important; }
-.cm-cursor { border-left-color: var(--sm-color-text) !important; }
-.cm-selectionBackground, .cm-focused .cm-selectionBackground { background-color: #3392FF44 !important; }
-.cm-selectionMatch { background-color: transparent !important; }
-.cm-activeLine { background-color: transparent !important; }
-.cm-gutters { background-color: var(--sm-bg-editor) !important; border-right: 1px solid var(--sm-border-editor) !important; }
-.cm-lineNumbers .cm-gutterElement { color: #858585 !important; }
-body.dark .cm-lineNumbers .cm-gutterElement { color: #858585 !important; }
-
 .cm-sm-Text { color: var(--sm-color-text); }
 .cm-sm-Comment { color: var(--sm-color-comment); font-style: italic; }
 .cm-sm-Escape { color: var(--sm-color-escape); font-weight: bold; }
@@ -449,9 +437,45 @@ const cm_styles = `
         --sm-editor-font-size: 14pt; /* 기본값 */
     }
 
+    /* CodeMirror 에디터 배경 및 텍스트 색상 */
     .cm-editor {
+        flex: 1;
+        display: flex;
+        min-height: 0;
+        flex-direction: column;
         font-size: var(--sm-editor-font-size) !important;
         font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+        background-color: var(--sm-bg-editor) !important;
+        color: var(--sm-color-text) !important;
+    }
+    .cm-content {
+        color: var(--sm-color-text) !important;
+    }
+    .cm-line {
+        color: var(--sm-color-text) !important;
+    }
+    .cm-cursor {
+        border-left-color: var(--sm-color-text) !important;
+    }
+    .cm-selectionBackground,
+    .cm-focused .cm-selectionBackground {
+        background-color: #3392FF44 !important;
+    }
+    .cm-selectionMatch {
+        background-color: transparent !important;
+    }
+    .cm-activeLine {
+        background-color: transparent !important;
+    }
+    .cm-gutters {
+        background-color: var(--sm-bg-editor) !important;
+        border-right: 1px solid var(--sm-border-editor) !important;
+    }
+    .cm-lineNumbers .cm-gutterElement {
+        color: #858585 !important;
+    }
+    body.dark .cm-lineNumbers .cm-gutterElement {
+        color: #858585 !important;
     }
     
     /* 에디터의 개별 라인 높이를 고정하여 헤더 크기에 상관없이 정렬 유지 */
@@ -527,6 +551,9 @@ const cm_styles = `
         left: -12px; right: -12px; /* 좌우로 넉넉하게 잡기 판정 확장 */
         z-index: 5;
     }
+    .hidden {
+        display: none;
+    }
 `;
 // 테마 전환 헬퍼 함수
 function setEditorTheme(theme) {
@@ -575,6 +602,19 @@ export async function init_codemirror(parent, initialDoc = "") {
     googleFont.rel = "stylesheet";
     document.head.appendChild(googleFont);
 
+    //폭조절 사용여부
+    const cm_use_sep_handle_line = window.cm_use_sep_handle_line || false;
+    const sep_handle = document.getElementById("sm-editor-sep-handle-line");
+    if (sep_handle) {
+        if (cm_use_sep_handle_line === false) {
+            sep_handle.classList.add("hidden");
+            sep_handle.style.flex = "0 0 0";
+            sep_handle.style.margin = "0";
+        } else {
+            sep_handle.classList.remove("hidden");
+            sep_handle.style.flex = "0 0 3px";
+        }
+    }
     //폰트사이즈로드
     const fontSize = localStorage.getItem("sm-editor-font-size") || "12";
     document.documentElement.style.setProperty("--sm-editor-font-size", `${fontSize}pt`);

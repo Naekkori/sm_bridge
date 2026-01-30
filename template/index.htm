@@ -10,13 +10,15 @@
 <body>
     <script type="module">
         import init, { sm_editor_injecter, cm_highlighter, sm_renderer, get_crate_info } from "./sm_bridge.js";
-
+        const saveBtn = document.getElementById("save-button");
         async function run() {
             await init();
             // 전역에서 editor_support.js 가 참조할 수 있도록 등록
             window.cm_highlighter = cm_highlighter;
             window.sm_renderer = sm_renderer;
             window.get_crate_info = get_crate_info;
+            //폭조절 사용여부
+            //window.cm_use_sep_handle_line = true;
 
             sm_editor_injecter("editor-container");
             const savedCode = localStorage.getItem("code");
@@ -27,6 +29,15 @@
                 }
             }, 100);
 
+            window.addEventListener("keydown", (e) => {
+                if ((e.key === "s" || e.key === "S") && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault();
+                    if (saveBtn) {
+                        saveBtn.click();
+                    }
+                }
+            })
+
         }
         run();
         // 전역 추출 함수 정의
@@ -35,6 +46,11 @@
             if (typeof window.get_editor_text === "function") {
                 let text = window.get_editor_text();
                 localStorage.setItem("code", text);
+                const originalText = saveBtn.innerText;
+                saveBtn.innerText = "저장됨";
+                setTimeout(() => {
+                    saveBtn.innerText = originalText;
+                }, 1000);
             } else {
                 console.error("추출 함수가 로드되지 않았습니다.");
             }
@@ -49,7 +65,7 @@
         }
     </script>
 
-    <button onclick="window.setMyText()">텍스트 저장</button>
+    <button onclick="window.setMyText()" id="save-button">텍스트 저장</button>
     <div id="editor-container"></div>
 </body>
 
