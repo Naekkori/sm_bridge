@@ -185,19 +185,18 @@ body.dark {
     --sm-separator: #3e3e42;
 }
 
-#sm-editor-raw { height: 100%; background: var(--sm-bg-editor); display: flex; flex-direction: column; }
+#sm-editor-raw { height: 100%; background: var(--sm-bg-editor); display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
 #sm-editor-preview { 
     height: 100%;
     background: var(--sm-bg-editor); 
     color: var(--sm-color-text); 
-    padding: 1rem; 
     overflow-y: auto; 
     border-left: 1px solid var(--sm-border-editor);
     flex: 1;
 }
 
 /* CodeMirror 에디터 배경 및 텍스트 색상 */
-.cm-editor { flex: 1; display: flex; flex-direction: column; background-color: var(--sm-bg-editor) !important; color: var(--sm-color-text) !important; }
+.cm-editor { flex: 1; display: flex; min-height: 0; flex-direction: column; background-color: var(--sm-bg-editor) !important; color: var(--sm-color-text) !important; }
 .cm-content { color: var(--sm-color-text) !important; }
 .cm-line { color: var(--sm-color-text) !important; }
 .cm-cursor { border-left-color: var(--sm-color-text) !important; }
@@ -259,7 +258,7 @@ body.dark .cm-panel.cm-search .cm-button[name="close"] { color: #fff; }
 `;
 
 const TOOLBAR_CSS = `
-    .sm_toolbar { background: var(--sm-bg-toolbar); border-bottom: 1px solid var(--sm-border-toolbar); padding: 6px 12px; display: flex; gap: 4px; align-items: center; border-top-left-radius: 6px; border-top-right-radius: 6px; box-shadow: 0 1px 2px var(--sm-shadow-toolbar); position: relative; }
+    .sm_toolbar { background: var(--sm-bg-toolbar); border-bottom: 1px solid var(--sm-border-toolbar); padding: 6px 12px; display: flex; gap: 4px; align-items: center; border-top-left-radius: 6px; border-top-right-radius: 6px; box-shadow: 0 1px 2px var(--sm-shadow-toolbar); position: relative; flex-wrap: wrap; }
     .sm_toolbar_btn { background: transparent; color: var(--sm-btn-text); border: 1px solid transparent; border-radius: 4px; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s cubic-bezier(0.3, 0, 0.5, 1); position: relative; }
     .sm_toolbar_btn .material-symbols-outlined { font-size: 20px; }
     .sm_toolbar_btn:hover:not(:disabled) { background-color: var(--sm-btn-hover-bg); border-color: var(--sm-btn-hover-border); color: var(--sm-color-text); transform: translateY(-0.5px); }
@@ -287,10 +286,18 @@ const TOOLBAR_CSS = `
         align-items: center;
         gap: 10px;
     }
-    /* 하이라이팅 (프력뷰) */
+    /* 하이라이팅 (프리뷰) */
     .highlight {
         background-color: rgba(90, 136, 206, 0.2);
         transition: background-color 0.1s;
+    }
+    .cursor-active{
+        animation: cursor-active 1s ease-in-out infinite;
+    }
+    @keyframes cursor-active {
+        0% { background-color: rgba(90, 136, 206, 0.2); }
+        50% { background-color: rgba(90, 136, 206, 0.4); }
+        100% { background-color: rgba(90, 136, 206, 0.2); }
     }
     /* SevenMark Preview CSS (태그 기반 스타일링) */
 
@@ -319,6 +326,7 @@ const TOOLBAR_CSS = `
         padding: 0.4rem;
         border-radius: 6px;
         background-color: rgba(128, 128, 128, 0.1);
+        white-space: pre-wrap;
     }
     .sm-code code[data-lang]::before {
         content: attr(data-lang);
@@ -457,7 +465,7 @@ const cm_styles = `
         font-size: var(--sm-editor-font-size) !important;
         font-family: inherit !important;
         border-right: 1px solid var(--sm-border-editor);
-        background-color: transparent !important;
+        background-color: var(--sm-bg-editor) !important;
     }
     
     .cm-gutter-line {
@@ -469,6 +477,55 @@ const cm_styles = `
 
     .cm-gutterElement {
         opacity: 0.5;
+    }
+
+    /* 폭 조절 핸들 라인 */
+    .sm-editor-sep-handle-line {
+        width: 1px;
+        background-color: var(--sm-border-editor);
+        cursor: col-resize;
+        position: relative;
+        transition: background-color 0.2s;
+        margin: 0 8px; /* 좌우 공간 확보 */
+        background-clip: content-box;
+    }
+
+    /* 실제 시각적 핸들 (중앙의 그립 바) */
+    .sm-editor-sep-handle-line::before {
+        content: "⋮"; /* 세로 점 아이콘 느낌 */
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 14px;
+        height: 32px;
+        background-color: var(--sm-bg-toolbar);
+        border: 1px solid var(--sm-border-editor);
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        color: var(--sm-btn-text);
+        transition: all 0.2s;
+        z-index: 10;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .sm-editor-sep-handle-line:hover::before, .sm-editor-sep-handle-line.dragging::before {
+        border-color: var(--sm-color-header);
+        color: var(--sm-color-header);
+        height: 48px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    /* 실제 잡을 수 있는 히트 영역 (투명) */
+    .sm-editor-sep-handle-line::after {
+        content: "";
+        position: absolute;
+        top: 0; bottom: 0;
+        left: -12px; right: -12px; /* 좌우로 넉넉하게 잡기 판정 확장 */
+        z-index: 5;
     }
 `;
 // 테마 전환 헬퍼 함수
@@ -523,7 +580,7 @@ export async function init_codemirror(parent, initialDoc = "") {
     document.documentElement.style.setProperty("--sm-editor-font-size", `${fontSize}pt`);
     const fixedHeightEditor = EditorView.theme({
         "&": { height: "100%" },
-        "& .cm-scroller": { overflow: "auto" }
+        "& .cm-scroller": { overflow: "auto", flex: "1" }
     });
 
     const koPhrases = {
@@ -573,6 +630,14 @@ export async function init_codemirror(parent, initialDoc = "") {
                     block.classList.add("highlight");
                 } else {
                     block.classList.remove("highlight");
+                }
+
+                //커서 위치
+                let isCursorInside = (from === to && from >= start && from < end);
+                if (isCursorInside) {
+                    block.classList.add("cursor-active");
+                } else {
+                    block.classList.remove("cursor-active");
                 }
             });
 
@@ -673,8 +738,48 @@ export async function init_codemirror(parent, initialDoc = "") {
         // 저장된 테마 불러오기
         loadEditorTheme();
     }, 0);
-
+    setup_sep_handle_line();
     return view;
+}
+function setup_sep_handle_line() {
+    const sep_handle_line = document.getElementById("sm-editor-sep-handle-line");
+    if (!sep_handle_line) return;
+
+    sep_handle_line.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        sep_handle_line.classList.add("dragging");
+
+        const onMouseUp = () => {
+            sep_handle_line.classList.remove("dragging");
+            document.removeEventListener("mousemove", handleResize);
+            document.removeEventListener("mouseup", onMouseUp);
+            if (window.cm_instances) {
+                window.cm_instances.forEach(view => view.requestMeasure());
+            }
+        };
+
+        document.addEventListener("mousemove", handleResize);
+        document.addEventListener("mouseup", onMouseUp);
+    });
+}
+
+function handleResize(e) {
+    const editor = document.getElementById("sm-editor-raw");
+    const preview = document.getElementById("sm-editor-preview");
+    if (!editor || !preview) return;
+
+    const container = editor.parentElement;
+    const containerRect = container.getBoundingClientRect();
+
+    let newWidth = e.clientX - containerRect.left;
+
+    const minWidth = 368;
+    const maxWidth = containerRect.width - 368;
+
+    if (newWidth < minWidth) newWidth = minWidth;
+    if (newWidth > maxWidth) newWidth = maxWidth;
+
+    editor.style.flex = `0 0 ${newWidth}px`;
 }
 function smoothScroll() {
     const preview = document.getElementById("sm-editor-preview");
