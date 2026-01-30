@@ -191,7 +191,6 @@ body.dark {
     background: var(--sm-bg-editor); 
     color: var(--sm-color-text); 
     overflow-y: auto; 
-    border-left: 1px solid var(--sm-border-editor);
     flex: 1;
 }
 
@@ -607,12 +606,16 @@ export async function init_codemirror(parent, initialDoc = "") {
     const sep_handle = document.getElementById("sm-editor-sep-handle-line");
     if (sep_handle) {
         if (cm_use_sep_handle_line === false) {
-            sep_handle.classList.add("hidden");
-            sep_handle.style.flex = "0 0 0";
+            // 보이지는 않지만 '빈 공간'으로 남겨둠
+            sep_handle.style.visibility = "hidden";
+            sep_handle.style.pointerEvents = "none";
+            sep_handle.style.flex = "0 0 1rem"; // 빈 간격 크기
             sep_handle.style.margin = "0";
         } else {
-            sep_handle.classList.remove("hidden");
+            sep_handle.style.visibility = "visible";
+            sep_handle.style.pointerEvents = "auto";
             sep_handle.style.flex = "0 0 3px";
+            sep_handle.style.margin = "0 8px";
         }
     }
     //폰트사이즈로드
