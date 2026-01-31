@@ -1,7 +1,33 @@
-#cargo make playground
+[tasks.install-miniserve]
+description = "miniserve 설치 확인 및 설치"
+script_runner = "@rust"
+script = ['''
+    use std::process::Command;
+
+    fn main() {
+        // miniserve --version 명령어로 설치 여부 확인
+        let check = Command::new("miniserve").arg("--version").output();
+
+        if check.is_err() {
+            println!("miniserve를 찾을 수 없습니다. 설치를 시작합니다...");
+            let install = Command::new("cargo")
+                .args(&["install", "miniserve"])
+                .status()
+                .expect("miniserve 설치에 실패했습니다.");
+
+            if install.success() {
+                println!("miniserve 설치 완료!");
+            }
+        } else {
+            println!("miniserve가 이미 설치되어 있습니다.");
+        }
+    }
+''']
+
 [tasks.playground]
-command = "miniserve"
 description = "Playground server"
+dependencies = ["install-miniserve"]     # 실행 전 설치 태스크 먼저 수행
+command = "miniserve"
 args = ["./pkg", "--index", "index.htm"]
 
 [tasks.pg]
