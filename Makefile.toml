@@ -1,0 +1,9 @@
+#cargo make playground
+[tasks.playground]
+command = "miniserve"
+description = "Playground server"
+args = ["./pkg", "--index", "index.htm"]
+
+[tasks.pg]
+description = "Playground alias"
+alias = "playground"
