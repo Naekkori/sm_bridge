@@ -805,7 +805,15 @@ export async function init_codemirror(parent, initialDoc = "") {
 
             const activeType = findActiveType(ast, from, to);
 
-            updateToolbarButtons(activeType);
+            // 툴바 버튼 활성화 상태 업데이트 통합
+            const toolbar = document.getElementById("sm-toolbar");
+            if (toolbar) {
+                toolbar.querySelectorAll("[data-ast-type]").forEach(btn => btn.classList.remove("active"));
+                activeType.forEach(type => {
+                    const btn = toolbar.querySelector(`[data-ast-type="${type}"]`);
+                    if (btn) btn.classList.add("active");
+                });
+            }
 
             const preview = document.getElementById("sm-editor-preview");
             if (!preview) return;
@@ -1054,15 +1062,16 @@ function setup_toolbar(CM) {
     parent.prepend(toolbar);
 
     const Buttons = [
-        { id: "sm-toolbar-bold", className: "sm_toolbar_btn", text: "format_bold", title: "굵게", onClick: () => toggleSyntax("**", "**", "Bold") },
-        { id: "sm-toolbar-italic", className: "sm_toolbar_btn", text: "format_italic", title: "이탤릭체", onClick: () => toggleSyntax("*", "*", "Italic") },
-        { id: "sm-toolbar-underline", className: "sm_toolbar_btn", text: "format_underlined", title: "밑줄", onClick: () => toggleSyntax("__", "__", "Underline") },
-        { id: "sm-toolbar-strike", className: "sm_toolbar_btn", text: "strikethrough_s", title: "취소선", onClick: () => toggleSyntax("~~", "~~", "Strikethrough") },
-        { id: "sm-toolbar-superscript", className: "sm_toolbar_btn", html: '<b>X<sup>2</sup></b>', title: "상위첨자", onClick: () => toggleSyntax("^^", "^^", "Superscript") },
-        { id: "sm-toolbar-subscript", className: "sm_toolbar_btn", html: '<b>X<sub>2</sub></b>', title: "하위첨자", onClick: () => toggleSyntax(",,", ",,", "Subscript") },
+        { id: "sm-toolbar-bold", astType: "Bold", className: "sm_toolbar_btn", text: "format_bold", title: "굵게", onClick: () => toggleSyntax("**", "**", "Bold") },
+        { id: "sm-toolbar-italic", astType: "Italic", className: "sm_toolbar_btn", text: "format_italic", title: "이탤릭체", onClick: () => toggleSyntax("*", "*", "Italic") },
+        { id: "sm-toolbar-underline", astType: "Underline", className: "sm_toolbar_btn", text: "format_underlined", title: "밑줄", onClick: () => toggleSyntax("__", "__", "Underline") },
+        { id: "sm-toolbar-strike", astType: "Strikethrough", className: "sm_toolbar_btn", text: "strikethrough_s", title: "취소선", onClick: () => toggleSyntax("~~", "~~", "Strikethrough") },
+        { id: "sm-toolbar-superscript", astType: "Superscript", className: "sm_toolbar_btn", html: '<b>X<sup>2</sup></b>', title: "상위첨자", onClick: () => toggleSyntax("^^", "^^", "Superscript") },
+        { id: "sm-toolbar-subscript", astType: "Subscript", className: "sm_toolbar_btn", html: '<b>X<sub>2</sub></b>', title: "하위첨자", onClick: () => toggleSyntax(",,", ",,", "Subscript") },
         { id: "sm-separator", className: "sm_toolbar_btn sm_toolbar_separator" },
         {
             id: "sm-toolbar-headings",
+            astType: "Header",
             className: "sm_toolbar_btn",
             text: "format_size",
             title: "머릿말",
@@ -1078,6 +1087,7 @@ function setup_toolbar(CM) {
         },
         {
             id: "sm-toolbar-hline",
+            astType: "HLine",
             className: "sm_toolbar_btn",
             text: "horizontal_rule",
             title: "가로선",
@@ -1094,6 +1104,7 @@ function setup_toolbar(CM) {
         },
         {
             id: "sm-toolbar-quotes",
+            astType: "BlockQuote",
             className: "sm_toolbar_btn",
             text: "format_quote",
             title: "인용",
@@ -1101,6 +1112,7 @@ function setup_toolbar(CM) {
         },
         {
             id: "sm-toolbar-code",
+            astType: "Code",
             className: "sm_toolbar_btn",
             text: "code",
             title: "코드",
@@ -1108,6 +1120,7 @@ function setup_toolbar(CM) {
         },
         {
             id: "sm-toolbar-folder",
+            astType: "Fold",
             className: "sm_toolbar_btn",
             text: "folder",
             title: "폴드(접을수 있는 영역)",
@@ -1115,6 +1128,7 @@ function setup_toolbar(CM) {
         },
         {
             id: "sm-toolbar-list",
+            astType: "List",
             className: " sm_toolbar_btn",
             text: "format_list_numbered",
             title: "리스트",
@@ -1133,6 +1147,7 @@ function setup_toolbar(CM) {
         },
         {
             id: "sm-toolbar-table",
+            astType: "Table",
             className: "sm_toolbar_btn",
             text: "table_chart",
             title: "테이블",
@@ -1158,6 +1173,7 @@ function setup_toolbar(CM) {
         const btn = document.createElement("button");
         btn.id = button.id;
         btn.className = button.className;
+        if (button.astType) btn.dataset.astType = button.astType;
         btn.innerHTML = button.html || `<span class="material-symbols-outlined">${button.text}</span>`;
         btn.title = button.title;
         btn.addEventListener("click", button.onClick);
@@ -1172,6 +1188,7 @@ function setup_toolbar(CM) {
         const btn = document.createElement("button");
         btn.id = config.id;
         btn.className = config.className;
+        if (config.astType) btn.dataset.astType = config.astType;
         btn.innerHTML = `<span class="material-symbols-outlined">${config.text}</span>`;
         btn.title = config.title;
 
@@ -1452,34 +1469,6 @@ function findActiveType(nodes, from, to, activeSet = new Set()) {
     return activeSet;
 }
 
-function updateToolbarButtons(activeSet) {
-    const mapping = {
-        "Bold": "sm-toolbar-bold",
-        "Italic": "sm-toolbar-italic",
-        "Underline": "sm-toolbar-underline",
-        "Strikethrough": "sm-toolbar-strike",
-        "Superscript": "sm-toolbar-superscript",
-        "Subscript": "sm-toolbar-subscript",
-        "Header": "sm-toolbar-headings",
-        "BlockQuote": "sm-toolbar-quotes",
-        "HLine": "sm-toolbar-hline"
-    };
-
-    // 매핑된 모든 버튼 초기화
-    Object.values(mapping).forEach(id => {
-        const btn = document.getElementById(id);
-        if (btn) btn.classList.remove("active");
-    });
-
-    // 활성화된 타입에 불 들어오게 하기
-    activeSet.forEach(type => {
-        const id = mapping[type];
-        if (id) {
-            const btn = document.getElementById(id);
-            if (btn) btn.classList.add("active");
-        }
-    });
-}
 
 function setEditorFontSize(fontSize) {
     document.documentElement.style.setProperty("--sm-editor-font-size", `${fontSize}pt`);
