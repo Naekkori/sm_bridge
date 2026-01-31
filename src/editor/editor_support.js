@@ -1542,10 +1542,14 @@ function makingTableModal() {
                 <div style="padding: 20px 0; text-align: center;">
                     <p style="opacity: 0.7; margin-bottom: 15px;">CSV 또는 엑셀 파일을 업로드하여 테이블로 변환합니다.</p>
                     <input type="file" id="table-file-input" accept=".csv, .xlsx, .xls" style="display: none;">
+                    <label for="sheet-select" id="sheet-select-label" class="hidden">워크시트 선택 </label>
+                    <select id="sheet-select" style="margin-bottom: 15px;" class="sm_settings_select hidden">
+                        <option value="">워크시트 선택</option>
+                    </select>
                     <button class="sm_modal_create_btn" onclick="document.getElementById('table-file-input').click()">파일 선택</button>
                     <p id="file-name-display" style="margin-top: 10px; font-size: 0.85rem; color: var(--sm-color-header);"></p>
                 </div>
-                <button id="import-table-btn" class="sm_modal_create_btn" disabled>파일로 생성 (준비중)</button>
+                <button id="import-table-btn" class="sm_modal_create_btn" disabled>파일로 생성</button>
             </div>
     `;
 
@@ -1650,15 +1654,108 @@ function makingTableModal() {
             fileInput.addEventListener("change", (e) => {
                 if (e.target.files.length > 0) {
                     fileNameDisplay.textContent = `선택된 파일: ${e.target.files[0].name}`;
+                    console.log(`what is ${e.target.files[0].type}`);
                     if (excelTypes.includes(e.target.files[0].type)) {
-                        // 엑셀일경우 워크시를 선택해야 하므로 워크시트들 가져오기
+                        const fileType = e.target.files[0].type;
                         const reader = new FileReader();
-                        reader.onload = (e) => {
-                            const data = e.target.result;
-                            const sheetNames = window.get_worksheets(data);
-                            //디버깅
-                            console.log(sheetNames);
-                        }
+                        reader.onload = (event) => {
+                            try {
+                                const data = new Uint8Array(event.target.result);
+                                const createBtn = modal.querySelector("#import-table-btn");
+                                const sheetSelect = modal.querySelector("#sheet-select");
+                                const sheetSelectLabel = modal.querySelector("#sheet-select-label");
+                                let pickSheet = "";
+
+                                if (fileType !== "text/csv") {
+                                    // 엑셀 처리
+                                    const sheetNames = window.excel_get_worksheets(data);
+                                    console.log("워크시트 목록:", sheetNames);
+
+                                    sheetSelect.classList.remove("hidden");
+                                    sheetSelectLabel.classList.remove("hidden");
+                                    sheetSelect.innerHTML = "";
+                                    sheetNames.forEach(sheetName => {
+                                        const option = document.createElement("option");
+                                        option.value = sheetName;
+                                        option.textContent = sheetName;
+                                        sheetSelect.appendChild(option);
+                                    });
+                                    pickSheet = sheetNames[0] || "";
+                                    sheetSelect.addEventListener("change", () => {
+                                        pickSheet = sheetSelect.value;
+                                    });
+                                } else {
+                                    // CSV는 시트 선택 필요 없음
+                                    sheetSelect.classList.add("hidden");
+                                    sheetSelectLabel.classList.add("hidden");
+                                }
+
+                                createBtn.disabled = false;
+                                createBtn.addEventListener("click", () => {
+                                    try {
+                                        let resultJson;
+                                        if (fileType === "text/csv") {
+                                            resultJson = window.open_csv(data);
+                                        } else {
+                                            resultJson = window.excel_open_book(data, pickSheet);
+                                        }
+
+                                        const result = JSON.parse(resultJson);
+                                        const rows = result.Ok || result;
+
+                                        if (!Array.isArray(rows)) {
+                                            throw new Error(result.Err || "데이터를 불러올 수 없습니다.");
+                                        }
+                                        const cleanCellValue = (cell) => {
+                                            if (typeof cell !== "string") {
+                                                return cell;
+                                            }
+                                            if (cell.includes(" : ")) {
+                                                const parts = cell.split(" : ");
+                                                const commonType = ["String", "Float", "Int", "Bool", "Empty", "Error", "DateTime"];
+                                                if (commonType.includes(parts[parts.length - 1])) {
+                                                    return parts.slice(0, -1).join(" : ");
+                                                }
+                                            }
+                                            return cell;
+                                        }
+                                        let tableText = "{{{#table\n";
+                                        for (let i = 0; i < rows.length; i++) {
+                                            if (i === 0) continue; // 첫번째 열은 파일명이므로 제외
+                                            tableText += "[[ ";
+                                            for (let j = 0; j < rows[i].length; j++) {
+                                                tableText += `[[ ${cleanCellValue(rows[i][j])} ]] `;
+                                            }
+                                            tableText += "]]\n";
+                                        }
+                                        tableText += "}}}";
+
+                                        const view = window.cm_instances[window.cm_instances.length - 1];
+                                        if (view) {
+                                            const { from, to } = view.state.selection.main;
+                                            view.dispatch({
+                                                changes: { from, to, insert: tableText },
+                                                selection: { anchor: from + tableText.length }
+                                            });
+                                            view.focus();
+                                        }
+                                        modal.remove();
+                                    } catch (err) {
+                                        alert("에러: " + err);
+                                    }
+                                });
+                            } catch (error) {
+                                console.error("데이터 처리 에러:", error);
+                                fileNameDisplay.innerHTML = `<span style='color: red;'>에러: ${error}</span>`;
+                            }
+                        };
+                        reader.onerror = () => {
+                            fileNameDisplay.innerHTML = "<span style='color: red;'>파일을 읽는 중 에러가 발생했습니다.</span>";
+                        };
+                        reader.readAsArrayBuffer(e.target.files[0]);
+                    }
+                    else {
+                        fileNameDisplay.innerHTML = "<span style='color: red;'>지원하지 않는 파일 형식입니다.</span>";
                     }
                 }
             });

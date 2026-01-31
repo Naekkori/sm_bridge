@@ -98,14 +98,16 @@ pub fn cm_highlighter(raw: &str) -> String {
 }
 
 #[wasm_bindgen]
-pub fn excel_get_worksheets(data: &[u8]) -> Vec<String> {
-    editor::sheet::excel_get_worksheets(data)
+pub fn excel_get_worksheets(data: &[u8]) -> Result<Vec<String>, JsValue> {
+    editor::sheet::excel_get_worksheets(data).map_err(|e| JsValue::from_str(&e))
 }
 #[wasm_bindgen]
-pub fn excel_open_book(data: &[u8], sheet: &str) -> String {
-    serde_json::to_string(&editor::sheet::excel_open_book(data, sheet)).unwrap()
+pub fn excel_open_book(data: &[u8], sheet: &str) -> Result<String, JsValue> {
+    let data = editor::sheet::excel_open_book(data, sheet);
+    serde_json::to_string(&data).map_err(|e| JsValue::from_str(&e.to_string()))
 }
 #[wasm_bindgen]
-pub fn open_csv(data: &[u8]) -> String {
-    serde_json::to_string(&editor::sheet::open_csv(data)).unwrap()
+pub fn open_csv(data: &[u8]) -> Result<String, JsValue> {
+    let data = editor::sheet::open_csv(data);
+    serde_json::to_string(&data).map_err(|e| JsValue::from_str(&e.to_string()))
 }
