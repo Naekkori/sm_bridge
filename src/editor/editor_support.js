@@ -758,7 +758,7 @@ export async function init_codemirror(parent, initialDoc = "") {
     }
 
     //폭조절 사용여부
-    const cm_use_sep_handle_line = window.cm_use_sep_handle_line !== undefined ? window.cm_use_sep_handle_line : true;
+    const cm_use_sep_handle_line = window.cm_use_sep_handle_line !== undefined ? window.cm_use_sep_handle_line : false;
     const sep_handle = document.getElementById("sm-editor-sep-handle-line");
     if (sep_handle) {
         if (cm_use_sep_handle_line === false) {
