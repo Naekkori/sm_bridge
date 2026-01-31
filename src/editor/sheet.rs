@@ -25,7 +25,9 @@ pub fn excel_open_book(data: &[u8], sheet: &str) -> Result<Vec<Vec<String>>, Str
 }
 pub fn open_csv(data: &[u8]) -> Result<Vec<Vec<String>>, String> {
     let reader = Cursor::new(data);
-    let mut csv_reader = csv::Reader::from_reader(reader);
+    let mut csv_reader = csv::ReaderBuilder::new()
+        .has_headers(false)
+        .from_reader(reader);
     let mut rows = Vec::new();
 
     for (i, result) in csv_reader.records().enumerate() {

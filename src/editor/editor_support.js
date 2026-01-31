@@ -282,27 +282,15 @@ const TOOLBAR_CSS = `
         50% { background-color: rgba(90, 136, 206, 0.4); }
         100% { background-color: rgba(90, 136, 206, 0.2); }
     }
-    /* SevenMark Preview CSS (태그 기반 스타일링) */
+`;
 
-    #sm-editor-preview strong {
-        font-weight: bold;
-    }
-    #sm-editor-preview em {
-        font-style: italic;
-    }
-    #sm-editor-preview u {
-        text-decoration: underline;
-    }
-    #sm-editor-preview del {
-        text-decoration: line-through;
-    }
-    /*
-    .sm-render-block code {
-        font-family: 'Courier New', Courier, monospace;
-        background-color: rgba(128, 128, 128, 0.1);
-        padding: 2px 4px;
-        border-radius: 3px;
-    }*/
+const SM_RENDER_CSS = `
+    /* SevenMark Preview CSS (태그 기반 스타일링) */
+    strong { font-weight: bold; }
+    em { font-style: italic; }
+    u { text-decoration: underline; }
+    del { text-decoration: line-through; }
+    
     .sm-code {
         font-family: 'Courier New', Courier, monospace;
         position: relative;
@@ -323,7 +311,7 @@ const TOOLBAR_CSS = `
         font-weight: bold;
         pointer-events: none;
     }
-    #sm-editor-preview blockquote {
+    blockquote {
         border-left: 4px solid #ccc;
         padding-left: 15px;
         margin: 10px 0;
@@ -337,13 +325,12 @@ const TOOLBAR_CSS = `
     }
     
     /* 헤드라인 (클래스 기반) */
-    /* 에디터 내부 헤더: 마진이 있으면 줄 번호 정렬이 틀어짐 */
-    .sm-h1 { font-size: 1.8em; font-weight: bold; margin: 0; }
-    .sm-h2 { font-size: 1.5em; font-weight: bold; margin: 0; }
-    .sm-h3 { font-size: 1.25em; font-weight: bold; margin: 0; }
-    .sm-h4 { font-size: 1.1em; font-weight: bold; margin: 0; }
-    .sm-h5 { font-size: 1em; font-weight: bold; margin: 0; }
-    .sm-h6 { font-size: 0.9em; font-weight: bold; margin: 0; }
+    .sm-h1 { font-size: 1.8em; font-weight: bold; margin: 0.67em 0; }
+    .sm-h2 { font-size: 1.5em; font-weight: bold; margin: 0.75em 0; }
+    .sm-h3 { font-size: 1.25em; font-weight: bold; margin: 0.83em 0; }
+    .sm-h4 { font-size: 1.1em; font-weight: bold; margin: 1.12em 0; }
+    .sm-h5 { font-size: 1em; font-weight: bold; margin: 1.5em 0; }
+    .sm-h6 { font-size: 0.9em; font-weight: bold; margin: 2.33em 0; }
 
     /* 테이블 */
     .sm-table {
@@ -351,8 +338,7 @@ const TOOLBAR_CSS = `
         width: 100%;
         margin: 15px 0;
     }
-    .sm-table th,
-    .sm-table td {
+    .sm-table th, .sm-table td {
         border: 1px solid #ddd;
         padding: 10px;
         text-align: left;
@@ -361,20 +347,13 @@ const TOOLBAR_CSS = `
         background-color: rgba(128, 128, 128, 0.1);
         font-weight: bold;
     }
-    .sm-table tr:nth-child(even) {
-        background-color: rgba(128, 128, 128, 0.03);
-    }
-    .sm-table tr:hover {
-        background-color: rgba(128, 128, 128, 0.08);
-    }
+    .sm-table tr:nth-child(even) { background-color: rgba(128, 128, 128, 0.03); }
+    .sm-table tr:hover { background-color: rgba(128, 128, 128, 0.08); }
+
     /* 섹션 및 접기 (details/summary) 스타일링 */
-    .sm-section, .sm-fold {
-        margin: 10px 0;
-        border: 1px solid transparent;
-        transition: all 0.2s;
-    }
+    .sm-section, .sm-fold { margin: 10px 0; border: 1px solid transparent; transition: all 0.2s; }
     .sm-section summary, .sm-fold summary {
-        list-style: none; /* 기본 화살표 숨기기 */
+        list-style: none;
         cursor: pointer;
         outline: none;
         display: flex;
@@ -382,13 +361,8 @@ const TOOLBAR_CSS = `
         gap: 8px;
         padding: 4px 0;
     }
-    /* Webkit 브라우저용 화살표 숨기기 */
-    .sm-section summary::-webkit-details-marker,
-    .sm-fold summary::-webkit-details-marker {
-        display: none;
-    }
+    .sm-section summary::-webkit-details-marker, .sm-fold summary::-webkit-details-marker { display: none; }
     
-    /* 기본 화살표 대신 커스텀 아이콘 (::before) */
     .sm-section summary::before, .sm-fold summary::before {
         content: '▶';
         font-size: 0.8em;
@@ -399,34 +373,19 @@ const TOOLBAR_CSS = `
         text-align: center;
         flex-shrink: 0;
     }
-    .sm-section[open] > summary::before, 
-    .sm-fold[open] > summary::before {
-        transform: rotate(90deg);
-    }
+    .sm-section[open] > summary::before, .sm-fold[open] > summary::before { transform: rotate(90deg); }
     
-    /* summary 내부의 헤더 마진 제거하여 화살표와 수평 맞춤 */
-    .sm-section summary h1, 
-    .sm-section summary h2, 
-    .sm-section summary h3, 
-    .sm-section summary h4, 
-    .sm-section summary h5, 
-    .sm-section summary h6 {
-        display: inline;
-        margin: 0 !important;
-        padding: 0;
+    .sm-section summary h1, .sm-section summary h2, .sm-section summary h3, 
+    .sm-section summary h4, .sm-section summary h5, .sm-section summary h6 {
+        display: inline; margin: 0 !important; padding: 0;
     }
-
     .sm-section-content {
-        padding-left: 20px;
-        margin-left: 5px;
+        padding-left: 20px; margin-left: 5px;
         border-left: 1px solid rgba(128, 128, 128, 0.1);
     }
-    
-    .sm-section:hover {
-        background-color: rgba(128, 128, 128, 0.02);
-        border-radius: 4px;
-    }
+    .sm-section:hover { background-color: rgba(128, 128, 128, 0.02); border-radius: 4px; }
 `;
+
 const cm_styles = `
     :root {
         --sm-editor-font-size: 14pt; /* 기본값 */
@@ -736,6 +695,11 @@ const cm_styles = `
     .sm_modal_create_btn:hover {
         background: #2b7acc;
     }
+    .sm_modal_create_btn:disabled {
+        background: #555;
+        color: #888;
+        cursor: not-allowed;
+    }
 `;
 // 테마 전환 헬퍼 함수
 function setEditorTheme(theme) {
@@ -783,6 +747,15 @@ export async function init_codemirror(parent, initialDoc = "") {
     googleFont.href = "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@400;500;600;700&display=swap";
     googleFont.rel = "stylesheet";
     document.head.appendChild(googleFont);
+
+    // SevenMark 렌더링 스타일 주입 여부 결정
+    const sm_use_render_css = window.sm_use_render_css !== undefined ? window.sm_use_render_css : true;
+    if (sm_use_render_css) {
+        const render_style = document.createElement("style");
+        render_style.id = "sm-render-style";
+        render_style.textContent = SM_RENDER_CSS;
+        document.head.appendChild(render_style);
+    }
 
     //폭조절 사용여부
     const cm_use_sep_handle_line = window.cm_use_sep_handle_line || false;
@@ -1599,6 +1572,10 @@ function makingTableModal() {
                 }
                 preview.appendChild(row);
             }
+
+            // 행/열이 1개라도 있으면 버튼 활성화
+            createBtn.disabled = (rows <= 0 || cols <= 0);
+
             if (rows > 10 || cols > 10) {
                 const notice = document.createElement("div");
                 notice.style.fontSize = "0.8rem";
@@ -1612,7 +1589,6 @@ function makingTableModal() {
         rowsInput.addEventListener("input", updatePreview);
         colsInput.addEventListener("input", updatePreview);
         updatePreview();
-
         createBtn.addEventListener("click", () => {
             const rows = parseInt(rowsInput.value) || 1;
             const cols = parseInt(colsInput.value) || 1;
@@ -1653,21 +1629,26 @@ function makingTableModal() {
         if (fileInput) {
             fileInput.addEventListener("change", (e) => {
                 if (e.target.files.length > 0) {
-                    fileNameDisplay.textContent = `선택된 파일: ${e.target.files[0].name}`;
-                    console.log(`what is ${e.target.files[0].type}`);
-                    if (excelTypes.includes(e.target.files[0].type)) {
-                        const fileType = e.target.files[0].type;
+                    const file = e.target.files[0];
+                    fileNameDisplay.textContent = `선택된 파일: ${file.name}`;
+
+                    // MIME 타입 또는 확장자로 판별 (MIME 타입이 비어있는 경우가 많음)
+                    const isCsv = file.type === "text/csv" || file.name.toLowerCase().endsWith(".csv");
+                    const isExcel = excelTypes.includes(file.type) || file.name.toLowerCase().endsWith(".xlsx") || file.name.toLowerCase().endsWith(".xls");
+
+                    if (isCsv || isExcel) {
                         const reader = new FileReader();
                         reader.onload = (event) => {
                             try {
                                 const data = new Uint8Array(event.target.result);
-                                const createBtn = modal.querySelector("#import-table-btn");
+                                const importBtn = modal.querySelector("#import-table-btn");
                                 const sheetSelect = modal.querySelector("#sheet-select");
                                 const sheetSelectLabel = modal.querySelector("#sheet-select-label");
                                 let pickSheet = "";
 
-                                if (fileType !== "text/csv") {
+                                if (!isCsv) {
                                     // 엑셀 처리
+                                    importBtn.disabled = true; // 시트 로드 전까지 비활성화
                                     const sheetNames = window.excel_get_worksheets(data);
                                     console.log("워크시트 목록:", sheetNames);
 
@@ -1684,17 +1665,22 @@ function makingTableModal() {
                                     sheetSelect.addEventListener("change", () => {
                                         pickSheet = sheetSelect.value;
                                     });
+                                    importBtn.disabled = false; // 준비 완료
                                 } else {
                                     // CSV는 시트 선택 필요 없음
                                     sheetSelect.classList.add("hidden");
                                     sheetSelectLabel.classList.add("hidden");
+                                    importBtn.disabled = false; // 즉시 활성
                                 }
 
-                                createBtn.disabled = false;
-                                createBtn.addEventListener("click", () => {
+                                // 이전 리스너 제거 후 새로 등록 (중복 방지)
+                                const newImportBtn = importBtn.cloneNode(true);
+                                importBtn.parentNode.replaceChild(newImportBtn, importBtn);
+
+                                newImportBtn.addEventListener("click", () => {
                                     try {
                                         let resultJson;
-                                        if (fileType === "text/csv") {
+                                        if (isCsv) {
                                             resultJson = window.open_csv(data);
                                         } else {
                                             resultJson = window.excel_open_book(data, pickSheet);
@@ -1704,12 +1690,17 @@ function makingTableModal() {
                                         const rows = result.Ok || result;
 
                                         if (!Array.isArray(rows)) {
+                                            newImportBtn.disabled = true;
                                             throw new Error(result.Err || "데이터를 불러올 수 없습니다.");
                                         }
+
+                                        if (Array.isArray(rows) && rows.length === 0) {
+                                            newImportBtn.disabled = true;
+                                            throw new Error("데이터가 없습니다.");
+                                        }
+
                                         const cleanCellValue = (cell) => {
-                                            if (typeof cell !== "string") {
-                                                return cell;
-                                            }
+                                            if (typeof cell !== "string") return cell;
                                             if (cell.includes(" : ")) {
                                                 const parts = cell.split(" : ");
                                                 const commonType = ["String", "Float", "Int", "Bool", "Empty", "Error", "DateTime"];
@@ -1719,11 +1710,13 @@ function makingTableModal() {
                                             }
                                             return cell;
                                         }
+
                                         let tableText = "{{{#table\n";
                                         for (let i = 0; i < rows.length; i++) {
-                                            if (i === 0) continue; // 첫번째 열은 파일명이므로 제외
+                                            // 엑셀일 때만 0번 열 스킵 (파일명)
+                                            let startCol = (!isCsv) ? 1 : 0;
                                             tableText += "[[ ";
-                                            for (let j = 0; j < rows[i].length; j++) {
+                                            for (let j = startCol; j < rows[i].length; j++) {
                                                 tableText += `[[ ${cleanCellValue(rows[i][j])} ]] `;
                                             }
                                             tableText += "]]\n";
