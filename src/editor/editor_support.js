@@ -124,6 +124,7 @@ var cm_css = `
     --sm-btn-active-bg: #e1e4e8;
     --sm-btn-disabled: #959da5;
     --sm-separator: #e1e4e8;
+    --sm-color-text-secondary: white;
 }
 
 /* 다크 테마 */
@@ -179,6 +180,7 @@ body.dark {
     --sm-btn-active-bg: #505050;
     --sm-btn-disabled: #6a737d;
     --sm-separator: #3e3e42;
+    --sm-color-text-secondary: white;
 }
 
 #sm-editor-raw { height: 100%; background: var(--sm-bg-editor); display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
@@ -684,7 +686,7 @@ const cm_styles = `
         margin-top: 15px;
         padding: 10px;
         background: var(--sm-color-header);
-        color: white;
+        color: var(--sm-color-text-secondary);
         border: none;
         border-radius: 4px;
         cursor: pointer;
@@ -706,11 +708,12 @@ const cm_styles = `
 `;
 // 테마 설정 구성 (새로운 요소 추가 시 여기에만 한 줄 추가하면 됨)
 const THEME_CONFIG = [
-    { var: "--sm-color-header", key: "sm-editor-custom-main", default: "#3392FF", label: "main" },
-    { var: "--sm-color-text", key: "sm-editor-custom-text", default: "#333333", label: "text" },
-    { var: "--sm-bg-editor", key: "sm-editor-custom-bg", default: "#ffffff", label: "bg" },
+    { var: "--sm-color-header", key: "sm-editor-custom-main", default: "#3392FF", label: "main", inputId: "#sm-editor-main-color" },
+    { var: "--sm-color-text", key: "sm-editor-custom-text", default: "#333333", label: "text", inputId: "#sm-editor-text-color" },
+    { var: "--sm-bg-editor", key: "sm-editor-custom-bg", default: "#ffffff", label: "bg", inputId: "#sm-editor-bg-color" },
     { var: "--sm-bg-toolbar", key: "sm-editor-custom-bg", default: "#ffffff", label: "bg" }, // 배경색 연동
-    { var: "--sm-btn-text", key: "sm-editor-custom-btn", default: "#333333", label: "btn" }
+    { var: "--sm-btn-text", key: "sm-editor-custom-btn", default: "#333333", label: "btn", inputId: "#sm-editor-btn-color" },
+    { var: "--sm-color-text-secondary", key: "sm-editor-custom-text-secondary", default: "#ffffff", label: "text-secondary", inputId: "#sm-editor-text-secondary-color" }
 ];
 
 // 테마 전환 헬퍼 함수
@@ -1090,8 +1093,21 @@ function setup_toolbar(CM) {
         { id: "sm-toolbar-italic", astType: "Italic", className: "sm_toolbar_btn", text: "format_italic", title: "이탤릭체", onClick: () => toggleSyntax("*", "*", "Italic") },
         { id: "sm-toolbar-underline", astType: "Underline", className: "sm_toolbar_btn", text: "format_underlined", title: "밑줄", onClick: () => toggleSyntax("__", "__", "Underline") },
         { id: "sm-toolbar-strike", astType: "Strikethrough", className: "sm_toolbar_btn", text: "strikethrough_s", title: "취소선", onClick: () => toggleSyntax("~~", "~~", "Strikethrough") },
-        { id: "sm-toolbar-superscript", astType: "Superscript", className: "sm_toolbar_btn", html: '<b>X<sup>2</sup></b>', title: "상위첨자", onClick: () => toggleSyntax("^^", "^^", "Superscript") },
-        { id: "sm-toolbar-subscript", astType: "Subscript", className: "sm_toolbar_btn", html: '<b>X<sub>2</sub></b>', title: "하위첨자", onClick: () => toggleSyntax(",,", ",,", "Subscript") },
+        { id: "sm-separator", className: "sm_toolbar_btn sm_toolbar_separator" },
+        { id: "sm-toolbar-superscript", astType: "Superscript", className: "sm_toolbar_btn", text: "superscript", title: "상위첨자", onClick: () => toggleSyntax("^^", "^^", "Superscript") },
+        { id: "sm-toolbar-subscript", astType: "Subscript", className: "sm_toolbar_btn", text: "subscript", title: "하위첨자", onClick: () => toggleSyntax(",,", ",,", "Subscript") },
+        {
+            id: "sm-toolbar-latex",
+            astType: "TeX",
+            className: "sm_toolbar_btn",
+            text: "function",
+            title: "수식",
+            type: "dropdown",
+            options: [
+                { text: "인라인 수식", icon: "functions", onClick: () => toggleSyntax("{{{#tex", "}}}", "TeX") },
+                { text: "블록 수식", icon: "functions", onClick: () => toggleSyntax("{{{#tex #block\n", "\n}}}", "TeX") },
+            ]
+        },
         { id: "sm-separator", className: "sm_toolbar_btn sm_toolbar_separator" },
         {
             id: "sm-toolbar-headings",
@@ -1328,6 +1344,14 @@ function setup_toolbar(CM) {
                                 </div>
                             </div>
                             <div class="sm_settings_row" style="margin-bottom: 0;">
+                                <span class="sm_settings_label">텍스트 보조 색상</span>
+                                <div class="sm_settings_value">
+                                    <input type="color" id="sm-editor-text-secondary-color" class="sm_settings_color"
+                                        style="cursor: pointer; border: none; background: transparent; width: 42px; height: 32px;"
+                                        value="${getComputedStyle(document.body).getPropertyValue('--sm-color-text-secondary').trim() || 'white'}">
+                                </div>
+                            </div>
+                            <div class="sm_settings_row" style="margin-bottom: 0;">
                                 <span class="sm_settings_label">버튼 색상</span>
                                 <div class="sm_settings_value">
                                     <input type="color" id="sm-editor-btn-color" class="sm_settings_color"
@@ -1366,6 +1390,7 @@ function setup_toolbar(CM) {
                     const colorText = modal.querySelector("#sm-editor-text-color");
                     const colorBg = modal.querySelector("#sm-editor-bg-color");
                     const colorBtn = modal.querySelector("#sm-editor-btn-color");
+                    const colorTextSecondary = modal.querySelector("#sm-editor-text-secondary-color");
                     const themeResetBtn = modal.querySelector("#sm-theme-reset-btn");
                     const themeSaveBtn = modal.querySelector("#sm-theme-save-btn");
                     const themeLoadBtn = modal.querySelector("#sm-theme-load-btn");
@@ -1408,17 +1433,23 @@ function setup_toolbar(CM) {
                         localStorage.setItem("sm-editor-custom-btn", color);
                     });
 
+                    colorTextSecondary.addEventListener("input", (e) => {
+                        const color = e.target.value;
+                        document.body.style.setProperty("--sm-color-text-secondary", color);
+                        localStorage.setItem("sm-editor-custom-text-secondary", color);
+                    });
+
                     themeResetBtn.addEventListener("click", () => {
                         if (confirm("기본값으로 되돌리시겠습니까?")) {
                             THEME_CONFIG.forEach(item => {
                                 document.body.style.setProperty(item.var, item.default);
                                 localStorage.setItem(item.key, item.default);
+
+                                if (item.inputId) {
+                                    const input = modal.querySelector(item.inputId);
+                                    if (input) input.value = item.default;
+                                }
                             });
-                            // 현재 활성화된 input들의 값도 갱신해주면 좋음
-                            colorMain.value = "#3392FF";
-                            colorText.value = "#333333";
-                            colorBg.value = "#ffffff";
-                            colorBtn.value = "#333333";
                         }
                     });
 
@@ -1450,14 +1481,19 @@ function setup_toolbar(CM) {
                                 try {
                                     const themeData = JSON.parse(re.target.result);
                                     THEME_CONFIG.forEach(item => {
-                                        if (themeData[item.label]) {
-                                            document.body.style.setProperty(item.var, themeData[item.label]);
-                                            localStorage.setItem(item.key, themeData[item.label]);
+                                        const newVal = themeData[item.label];
+                                        if (newVal) {
+                                            document.body.style.setProperty(item.var, newVal);
+                                            localStorage.setItem(item.key, newVal);
+                                            // input 값 갱신 추가
+                                            if (item.inputId) {
+                                                const input = modal.querySelector(item.inputId);
+                                                if (input) input.value = newVal;
+                                            }
                                         }
                                     });
                                     // UI 갱신 (테마 다시 세팅)
                                     window.setEditorTheme("custom");
-                                    alert("테마가 적용되었습니다.");
                                 } catch (err) {
                                     alert("유효하지 않은 테마 파일입니다.");
                                 }
