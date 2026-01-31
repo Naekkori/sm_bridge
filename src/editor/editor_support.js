@@ -561,7 +561,7 @@ const cm_styles = `
         margin-bottom: 10px;
         border: 1px solid var(--sm-border-editor);
         border-radius: 4px;
-        background: var(--sm-bg-toolbar);
+        background: var(--sm-bg-editor);
         color: var(--sm-color-text);
         font-family: inherit;
     }
@@ -704,31 +704,41 @@ const cm_styles = `
         user-select: none !important;
     }
 `;
+// 테마 설정 구성 (새로운 요소 추가 시 여기에만 한 줄 추가하면 됨)
+const THEME_CONFIG = [
+    { var: "--sm-color-header", key: "sm-editor-custom-main", default: "#3392FF", label: "main" },
+    { var: "--sm-color-text", key: "sm-editor-custom-text", default: "#333333", label: "text" },
+    { var: "--sm-bg-editor", key: "sm-editor-custom-bg", default: "#ffffff", label: "bg" },
+    { var: "--sm-bg-toolbar", key: "sm-editor-custom-bg", default: "#ffffff", label: "bg" }, // 배경색 연동
+    { var: "--sm-btn-text", key: "sm-editor-custom-btn", default: "#333333", label: "btn" }
+];
+
 // 테마 전환 헬퍼 함수
 function setEditorTheme(theme) {
     document.body.classList.remove("dark", "light", "custom");
-    if (theme === "dark") {
-        document.body.classList.add("dark");
-    } else if (theme == "custom") {
+
+    if (theme === "custom") {
         document.body.classList.add("custom");
+        // 저장된 커스텀 색상들을 자동으로 순회하며 적용
+        THEME_CONFIG.forEach(item => {
+            const savedVal = localStorage.getItem(item.key);
+            if (savedVal) document.body.style.setProperty(item.var, savedVal);
+            else if (item.default) document.body.style.setProperty(item.var, item.default);
+        });
     } else {
-        document.body.classList.add("light");
+        document.body.classList.add(theme === "dark" ? "dark" : "light");
+        // 커스텀 인라인 스타일 일괄 제거
+        THEME_CONFIG.forEach(item => document.body.style.removeProperty(item.var));
     }
-    // light는 기본 :root 변수 사용
+
     localStorage.setItem("sm-editor-theme", theme);
 }
 
 // 저장된 테마 불러오기
 function loadEditorTheme() {
     const savedTheme = localStorage.getItem("sm-editor-theme") || "light";
+    // setEditorTheme 내부에서 커스텀 컬러 처리까지 하도록 통합함
     setEditorTheme(savedTheme);
-
-    // 커스텀 색상이 있으면 적용
-    const savedColor = localStorage.getItem("sm-editor-custom-color");
-    if (savedColor) {
-        document.body.style.setProperty("--sm-color-header", savedColor);
-    }
-
     return savedTheme;
 }
 
@@ -1299,10 +1309,44 @@ function setup_toolbar(CM) {
                                 <span id="fnt-size" style="min-width: 35px; text-align: right;">${getEditorFontSize()}pt</span>
                             </div>
                         </div>
-                        <div class="sm_settings_row hidden" id="custom-theme-options">
-                            <span class="sm_settings_label">커스텀 테마 색상</span>
-                            <div class="sm_settings_value">
-                                <input type="color" id="sm-editor-main-color" class="sm_settings_color" value="${getComputedStyle(document.body).getPropertyValue('--sm-color-header').trim() || '#3392FF'}">
+                       <div class="hidden" id="custom-theme-options" style="margin-bottom: 20px;">
+                            <h3 style="margin-bottom:15px; border-bottom: 2px solid var(--sm-color-header); padding-bottom: 8px; font-size: 1.1rem;">커스텀 테마 설정</h3>
+                            <div class="sm_settings_row" style="margin-bottom: 0;">
+                                <span class="sm_settings_label">주 색상 (Primary)</span>
+                                <div class="sm_settings_value">
+                                    <input type="color" id="sm-editor-main-color" class="sm_settings_color"
+                                        style="cursor: pointer; border: none; background: transparent; width: 42px; height: 32px;"
+                                        value="${getComputedStyle(document.body).getPropertyValue('--sm-color-header').trim() || '#3392FF'}">
+                                </div>
+                            </div>
+                            <div class="sm_settings_row" style="margin-bottom: 0;">
+                                <span class="sm_settings_label">텍스트 색상</span>
+                                <div class="sm_settings_value">
+                                    <input type="color" id="sm-editor-text-color" class="sm_settings_color"
+                                        style="cursor: pointer; border: none; background: transparent; width: 42px; height: 32px;"
+                                        value="${getComputedStyle(document.body).getPropertyValue('--sm-color-text').trim() || '#333'}">
+                                </div>
+                            </div>
+                            <div class="sm_settings_row" style="margin-bottom: 0;">
+                                <span class="sm_settings_label">버튼 색상</span>
+                                <div class="sm_settings_value">
+                                    <input type="color" id="sm-editor-btn-color" class="sm_settings_color"
+                                        style="cursor: pointer; border: none; background: transparent; width: 42px; height: 32px;"
+                                        value="${getComputedStyle(document.body).getPropertyValue('--sm-btn-text').trim() || '#333'}">
+                                </div>
+                            </div>
+                            <div class="sm_settings_row" style="margin-bottom: 0;">
+                                <span class="sm_settings_label">배경 색상</span>
+                                <div class="sm_settings_value">
+                                    <input type="color" id="sm-editor-bg-color" class="sm_settings_color"
+                                        style="cursor: pointer; border: none; background: transparent; width: 42px; height: 32px;"
+                                        value="${getComputedStyle(document.body).getPropertyValue('--sm-bg-editor').trim() || '#fff'}">
+                                </div>
+                            </div>
+                            <div class="sm_settings_row" style="margin-bottom: 0;">
+                                <button class="sm_modal_create_btn" id="sm-theme-reset-btn">기본값으로</button>
+                                <button class="sm_modal_create_btn" id="sm-theme-save-btn">테마json 다운로드</button>
+                                <button class="sm_modal_create_btn" id="sm-theme-load-btn">테마json 업로드</button>
                             </div>
                         </div>
                         <div class="sm_settings_info_box">
@@ -1318,7 +1362,13 @@ function setup_toolbar(CM) {
                 `, (modal) => {
                     const select = modal.querySelector("#sm-editor-theme-select");
                     const customRow = modal.querySelector("#custom-theme-options");
-                    const colorInput = modal.querySelector("#sm-editor-main-color");
+                    const colorMain = modal.querySelector("#sm-editor-main-color");
+                    const colorText = modal.querySelector("#sm-editor-text-color");
+                    const colorBg = modal.querySelector("#sm-editor-bg-color");
+                    const colorBtn = modal.querySelector("#sm-editor-btn-color");
+                    const themeResetBtn = modal.querySelector("#sm-theme-reset-btn");
+                    const themeSaveBtn = modal.querySelector("#sm-theme-save-btn");
+                    const themeLoadBtn = modal.querySelector("#sm-theme-load-btn");
 
                     const updateCustomUI = (val) => {
                         if (val === "custom") customRow.classList.remove("hidden");
@@ -1333,10 +1383,87 @@ function setup_toolbar(CM) {
                         updateCustomUI(select.value);
                     });
 
-                    colorInput.addEventListener("input", (e) => {
+                    colorMain.addEventListener("input", (e) => {
                         const color = e.target.value;
                         document.body.style.setProperty("--sm-color-header", color);
-                        localStorage.setItem("sm-editor-custom-color", color);
+                        localStorage.setItem("sm-editor-custom-main", color);
+                    });
+
+                    colorText.addEventListener("input", (e) => {
+                        const color = e.target.value;
+                        document.body.style.setProperty("--sm-color-text", color);
+                        localStorage.setItem("sm-editor-custom-text", color);
+                    });
+
+                    colorBg.addEventListener("input", (e) => {
+                        const color = e.target.value;
+                        document.body.style.setProperty("--sm-bg-editor", color);
+                        document.body.style.setProperty("--sm-bg-toolbar", color);
+                        localStorage.setItem("sm-editor-custom-bg", color);
+                    });
+
+                    colorBtn.addEventListener("input", (e) => {
+                        const color = e.target.value;
+                        document.body.style.setProperty("--sm-btn-text", color);
+                        localStorage.setItem("sm-editor-custom-btn", color);
+                    });
+
+                    themeResetBtn.addEventListener("click", () => {
+                        if (confirm("기본값으로 되돌리시겠습니까?")) {
+                            THEME_CONFIG.forEach(item => {
+                                document.body.style.setProperty(item.var, item.default);
+                                localStorage.setItem(item.key, item.default);
+                            });
+                            // 현재 활성화된 input들의 값도 갱신해주면 좋음
+                            colorMain.value = "#3392FF";
+                            colorText.value = "#333333";
+                            colorBg.value = "#ffffff";
+                            colorBtn.value = "#333333";
+                        }
+                    });
+
+                    themeSaveBtn.addEventListener("click", () => {
+                        const themeData = {};
+                        // label 기준으로 중복 제거하여 데이터 생성
+                        THEME_CONFIG.forEach(item => {
+                            themeData[item.label] = document.body.style.getPropertyValue(item.var).trim() || item.default;
+                        });
+
+                        const blob = new Blob([JSON.stringify(themeData, null, 2)], { type: "application/json" });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = "theme.json";
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    });
+
+                    themeLoadBtn.addEventListener("click", () => {
+                        const input = document.createElement("input");
+                        input.type = "file";
+                        input.accept = "application/json";
+                        input.click();
+                        input.addEventListener("change", (e) => {
+                            const file = e.target.files[0];
+                            const reader = new FileReader();
+                            reader.onload = (re) => {
+                                try {
+                                    const themeData = JSON.parse(re.target.result);
+                                    THEME_CONFIG.forEach(item => {
+                                        if (themeData[item.label]) {
+                                            document.body.style.setProperty(item.var, themeData[item.label]);
+                                            localStorage.setItem(item.key, themeData[item.label]);
+                                        }
+                                    });
+                                    // UI 갱신 (테마 다시 세팅)
+                                    window.setEditorTheme("custom");
+                                    alert("테마가 적용되었습니다.");
+                                } catch (err) {
+                                    alert("유효하지 않은 테마 파일입니다.");
+                                }
+                            };
+                            reader.readAsText(file);
+                        });
                     });
 
                     const fontSizeInput = modal.querySelector("#sm-editor-font-size");
