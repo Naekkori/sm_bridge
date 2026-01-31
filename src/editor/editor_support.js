@@ -679,12 +679,11 @@ const cm_styles = `
         opacity: 0.8;
         font-family: 'JetBrains Mono', monospace;
     }
-
     .sm_modal_create_btn {
         width: 100%;
         margin-top: 15px;
         padding: 10px;
-        background: #3392FF;
+        background: var(--sm-color-header);
         color: white;
         border: none;
         border-radius: 4px;
@@ -693,11 +692,11 @@ const cm_styles = `
         transition: background 0.2s;
     }
     .sm_modal_create_btn:hover {
-        background: #2b7acc;
+        background: var(--sm-color-header);
     }
     .sm_modal_create_btn:disabled {
-        background: #555;
-        color: #888;
+        background: var(--sm-btn-disabled);
+        color: var(--sm-color-text);
         cursor: not-allowed;
     }
     .no-drag, .no-drag * {
@@ -707,9 +706,13 @@ const cm_styles = `
 `;
 // 테마 전환 헬퍼 함수
 function setEditorTheme(theme) {
-    document.body.classList.remove("dark", "light");
+    document.body.classList.remove("dark", "light", "custom");
     if (theme === "dark") {
         document.body.classList.add("dark");
+    } else if (theme == "custom") {
+        document.body.classList.add("custom");
+    } else {
+        document.body.classList.add("light");
     }
     // light는 기본 :root 변수 사용
     localStorage.setItem("sm-editor-theme", theme);
@@ -719,6 +722,13 @@ function setEditorTheme(theme) {
 function loadEditorTheme() {
     const savedTheme = localStorage.getItem("sm-editor-theme") || "light";
     setEditorTheme(savedTheme);
+
+    // 커스텀 색상이 있으면 적용
+    const savedColor = localStorage.getItem("sm-editor-custom-color");
+    if (savedColor) {
+        document.body.style.setProperty("--sm-color-header", savedColor);
+    }
+
     return savedTheme;
 }
 
@@ -1275,8 +1285,9 @@ function setup_toolbar(CM) {
                             <span class="sm_settings_label">에디터 테마</span>
                             <div class="sm_settings_value">
                                 <select id="sm-editor-theme-select" class="sm_settings_select">
-                                    <option value="light" ${!document.body.classList.contains('dark') ? 'selected' : ''}>Light Mode</option>
-                                    <option value="dark" ${document.body.classList.contains('dark') ? 'selected' : ''}>Dark Mode</option>
+                                    <option value="light" ${!document.body.classList.contains('dark') ? 'selected' : ''}>라이트</option>
+                                    <option value="dark" ${document.body.classList.contains('dark') ? 'selected' : ''}>다크</option>
+                                    <option value="custom" ${document.body.classList.contains('custom') ? 'selected' : ''}>사용자 지정</option>
                                 </select>
                             </div>
                         </div>
@@ -1288,7 +1299,12 @@ function setup_toolbar(CM) {
                                 <span id="fnt-size" style="min-width: 35px; text-align: right;">${getEditorFontSize()}pt</span>
                             </div>
                         </div>
-
+                        <div class="sm_settings_row hidden" id="custom-theme-options">
+                            <span class="sm_settings_label">커스텀 테마 색상</span>
+                            <div class="sm_settings_value">
+                                <input type="color" id="sm-editor-main-color" class="sm_settings_color" value="${getComputedStyle(document.body).getPropertyValue('--sm-color-header').trim() || '#3392FF'}">
+                            </div>
+                        </div>
                         <div class="sm_settings_info_box">
                             <div class="sm_settings_info_header">
                                 <img src="${smBridgeLogo}" alt="logo" class="sm_settings_info_logo">
@@ -1301,8 +1317,26 @@ function setup_toolbar(CM) {
                     </div>
                 `, (modal) => {
                     const select = modal.querySelector("#sm-editor-theme-select");
+                    const customRow = modal.querySelector("#custom-theme-options");
+                    const colorInput = modal.querySelector("#sm-editor-main-color");
+
+                    const updateCustomUI = (val) => {
+                        if (val === "custom") customRow.classList.remove("hidden");
+                        else customRow.classList.add("hidden");
+                    };
+
+                    // 초기 상태 반영
+                    updateCustomUI(select.value);
+
                     select.addEventListener("change", () => {
                         window.setEditorTheme(select.value);
+                        updateCustomUI(select.value);
+                    });
+
+                    colorInput.addEventListener("input", (e) => {
+                        const color = e.target.value;
+                        document.body.style.setProperty("--sm-color-header", color);
+                        localStorage.setItem("sm-editor-custom-color", color);
                     });
 
                     const fontSizeInput = modal.querySelector("#sm-editor-font-size");
@@ -1988,8 +2022,8 @@ function openTableEditorModal() {
             <button id="te-undo-btn" class="sm_modal_create_btn" style="width: 36px; background: var(--sm-bg-toolbar); border: 1px solid var(--sm-border-editor); height: 36px; padding: 0; display: flex; align-items: center; justify-content: center; margin-top: 0;" title="되돌리기 (Ctrl+Z)"><span class="material-symbols-outlined" style="font-size: 18px; color: var(--sm-color-header);">undo</span></button>
             <button id="te-redo-btn" class="sm_modal_create_btn" style="width: 36px; background: var(--sm-bg-toolbar); border: 1px solid var(--sm-border-editor); height: 36px; padding: 0; display: flex; align-items: center; justify-content: center; margin-top: 0;" title="다시하기 (Ctrl+Y)"><span class="material-symbols-outlined" style="font-size: 18px; color: var(--sm-color-header);">redo</span></button>
             <div style="flex: 1;"></div>
-            <button id="te-merge-btn" class="sm_modal_create_btn" style="padding: 0 15px; background: #3392FF; height: 36px; font-size: 0.8rem; width: auto; margin-top: 0;">셀 합치기</button>
-            <button id="te-split-btn" class="sm_modal_create_btn" style="padding: 0 15px; background: var(--sm-border-editor); color: var(--sm-color-text); height: 36px; font-size: 0.8rem; width: auto; margin-top: 0;">선택 해제</button>
+            <button id="te-merge-btn" class="sm_modal_create_btn" style="padding: 0 15px; height: 36px; font-size: 0.8rem; width: auto; margin-top: 0;">셀 합치기</button>
+            <button id="te-split-btn" class="sm_modal_create_btn" style="padding: 0 15px; background: var(--sm-bg-editor); color: var(--sm-color-text); border: 1px solid var(--sm-border-editor); height: 36px; font-size: 0.8rem; width: auto; margin-top: 0;">선택 해제</button>
         </div>
 
         <div id="te-grid-container" style="height: 250px; overflow: auto; border: 1px solid var(--sm-border-editor); border-radius: 6px; background: var(--sm-bg-editor); margin-bottom: 15px; padding: 10px;">
@@ -2157,7 +2191,7 @@ function openTableEditorModal() {
                     });
 
                     td.addEventListener("mousedown", (e) => {
-                        if (e.target === editArea) return;
+                        if (editArea.contentEditable === "true") return; // 드래그불가 해결
                         selection.active = true;
                         selection.start = { r, c: parseInt(td.dataset.c) };
                         selection.end = { r, c: parseInt(td.dataset.c) };
