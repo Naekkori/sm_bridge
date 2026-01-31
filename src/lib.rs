@@ -96,3 +96,16 @@ pub fn cm_highlighter(raw: &str) -> String {
     let converted_cm_doc = convert_ast_to_utf16_offset_json(&doc, &raw);
     converted_cm_doc
 }
+
+#[wasm_bindgen]
+pub fn excel_get_worksheets(data: &[u8]) -> Vec<String> {
+    editor::sheet::excel_get_worksheets(data)
+}
+#[wasm_bindgen]
+pub fn excel_open_book(data: &[u8], sheet: &str) -> String {
+    serde_json::to_string(&editor::sheet::excel_open_book(data, sheet)).unwrap()
+}
+#[wasm_bindgen]
+pub fn open_csv(data: &[u8]) -> String {
+    serde_json::to_string(&editor::sheet::open_csv(data)).unwrap()
+}

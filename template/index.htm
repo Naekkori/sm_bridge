@@ -9,14 +9,17 @@
 
 <body>
     <script type="module">
-        import init, { sm_editor_injecter, cm_highlighter, sm_renderer, get_crate_info } from "./sm_bridge.js";
+        import init, * as sm_bridge from "./sm_bridge.js";
         const saveBtn = document.getElementById("save-button");
         async function run() {
             await init();
             // 전역에서 editor_support.js 가 참조할 수 있도록 등록
-            window.cm_highlighter = cm_highlighter;
-            window.sm_renderer = sm_renderer;
-            window.get_crate_info = get_crate_info;
+            Object.entries(sm_bridge).forEach(([key, value]) => {
+                if (key !== "default") {
+                    window[key] = value;
+                    console.log(`registered ${key}`);
+                }
+            });
             //폭조절 사용여부
             //window.cm_use_sep_handle_line = true;
 

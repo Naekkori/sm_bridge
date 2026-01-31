@@ -1,7 +1,3 @@
-// 1번 라인의 순환 참조 임포트 제거
-// import { sm_renderer, cm_highlighter, get_crate_info } from "../../../../sm_bridge.js";
-
-
 window.cm_instances = [];
 
 // 전역 변수로 저장될 CodeMirror 모듈들
@@ -1644,10 +1640,26 @@ function makingTableModal() {
         // 파일 업로드 관련 (placeholder)
         const fileInput = modal.querySelector("#table-file-input");
         const fileNameDisplay = modal.querySelector("#file-name-display");
+        // 엑셀 및 CSV 타입 체크
+        const excelTypes = [
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // .xlsx
+            "application/vnd.ms-excel",                                        // .xls
+            "text/csv"                                                         // .csv
+        ];
         if (fileInput) {
             fileInput.addEventListener("change", (e) => {
                 if (e.target.files.length > 0) {
                     fileNameDisplay.textContent = `선택된 파일: ${e.target.files[0].name}`;
+                    if (excelTypes.includes(e.target.files[0].type)) {
+                        // 엑셀일경우 워크시를 선택해야 하므로 워크시트들 가져오기
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            const data = e.target.result;
+                            const sheetNames = window.get_worksheets(data);
+                            //디버깅
+                            console.log(sheetNames);
+                        }
+                    }
                 }
             });
         }
