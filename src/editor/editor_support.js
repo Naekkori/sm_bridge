@@ -264,6 +264,7 @@ const TOOLBAR_CSS = `
     .sm_modal_content label { color: var(--sm-color-text); }
     .sm_modal_close { position: absolute; top: 8px; right: 8px; cursor: pointer; font-size: 24px; color: var(--sm-btn-text); }
     .sm_modal_close:hover { color: var(--sm-color-error); }
+    .hidden { display: none !important; }
     .sm-editor-logo {
         display: flex;
         align-items: center;
@@ -566,7 +567,6 @@ const cm_styles = `
     }
     .sm_modal_content .sm_modal_label {
         display: inline-block;
-        width: 40px;
         font-size: 0.9rem;
     }
 
@@ -652,7 +652,7 @@ const cm_styles = `
         background: var(--sm-bg-toolbar);
         border-radius: 8px;
         padding: 15px;
-        margin-top: 10px;
+        margin-top: 14%;
         border: 1px solid var(--sm-border-editor);
     }
     .sm_settings_info_header {
@@ -699,6 +699,10 @@ const cm_styles = `
         background: #555;
         color: #888;
         cursor: not-allowed;
+    }
+    .no-drag, .no-drag * {
+        -webkit-user-select: none !important;
+        user-select: none !important;
     }
 `;
 // 테마 전환 헬퍼 함수
@@ -1151,9 +1155,11 @@ function setup_toolbar(CM) {
             className: "sm_toolbar_btn",
             text: "table_chart",
             title: "테이블",
-            onClick: () => {
-                makingTableModal();
-            }
+            type: "dropdown",
+            options: [
+                { text: "테이블 생성", icon: "add", onClick: () => makingTableModal() },
+                { text: "테이블 편집", icon: "table_edit", onClick: () => openTableEditorModal() }
+            ]
         }
     ];
     Buttons.forEach((button) => {
@@ -1428,9 +1434,11 @@ function createModal(content, onMount) {
     const modal = document.createElement("div");
     modal.className = "sm_modal";
     modal.innerHTML = `
-        <div class="sm_modal_content">
+        <div class="sm_modal_content" style="width: 600px; min-height: 450px; display: flex; flex-direction: column; box-sizing: border-box;">
             <span class="sm_modal_close">&times;</span>
-            ${content}
+            <div class="sm_modal_inner_scroll" style="flex: 1; overflow-y: auto; padding: 5px 10px 5px 0; box-sizing: border-box;">
+                ${content}
+            </div>
         </div>
     `;
     const closeBtn = modal.querySelector(".sm_modal_close");
@@ -1486,32 +1494,57 @@ function makingTableModal() {
             </div>
 
             <!-- 직접 생성 탭 -->
-            <div id="tab-manual" class="sm_modal_tab_content active">
-                <div style="margin-bottom: 10px;">
-                    <div style="margin-bottom: 5px;">
-                        <label class="sm_modal_label">행:</label> <input type="number" id="table-rows" value="3" min="1" max="50">
+            <div id="tab-manual" class="sm_modal_tab_content active" style="width: 100%; box-sizing: border-box;">
+                <div style="display: grid; grid-template-columns: 200px 1fr; gap: 30px; margin-bottom: 25px; align-items: center;">
+                    <div style="background: var(--sm-bg-editor); padding: 15px; border-radius: 8px; border: 1px solid var(--sm-border-editor); display: flex; flex-direction: column; align-items: center;">
+                        <div class="sm_modal_label" style="margin-bottom: 10px; font-size: 0.85rem; white-space: nowrap;">그리드 드래그 선택</div>
+                        <div id="table-grid-picker" class="sm_grid_picker" style="display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; width: 160px; height: 160px;">
+                            ${Array.from({ length: 100 }).map((_, i) => `<div class="sm_grid_cell" data-row="${Math.floor(i / 10)}" data-col="${i % 10}" style="width: 100%; height: 100%; background: var(--sm-border-editor); border-radius: 1px; cursor: pointer;"></div>`).join("")}
+                        </div>
                     </div>
-                    <div>
-                        <label class="sm_modal_label">열:</label> <input type="number" id="table-cols" value="3" min="1" max="20">
+                    <div style="display: flex; flex-direction: column; gap: 15px; padding-right: 10px;">
+                        <div id="sm-table-leftbox" style="margin-left: 23%">
+                            <div style="display: flex; align-items: center; gap: 15px; ">
+                                <label class="sm_modal_label" style="width: 80px; white-space: nowrap;">행 (Rows):</label> 
+                                <input type="number" id="table-rows" value="3" min="1" max="50" style="flex: 1; max-width: 100px; padding: 6px 10px; border-radius: 4px; border: 1px solid var(--sm-border-editor);">
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 15px; ">
+                                <label class="sm_modal_label" style="width: 80px; white-space: nowrap;">열 (Cols):</label> 
+                                <input type="number" id="table-cols" value="3" min="1" max="20" style="flex: 1; max-width: 100px; padding: 6px 10px; border-radius: 4px; border: 1px solid var(--sm-border-editor);">
+                            </div>
+                            <div id="table-size-indicator" style="font-size: 1.5rem; font-weight: bold; color: var(--sm-color-header); margin-top: 5px;">3 × 3</div>
+                        </div>
                     </div>
                 </div>
-                <div id="table-preview"></div>
-                <button id="create-table-btn" class="sm_modal_create_btn">테이블 삽입</button>
+                <div class="sm_modal_label" style="margin-bottom: 10px; white-space: nowrap; font-weight: bold; display: block; width: 100%;">데이터 입력 및 미리보기 (샘플/헤더)</div>
+                <div id="table-preview" style="height: 200px; overflow: auto; border: 1px solid var(--sm-border-editor); border-radius: 8px; padding: 15px; background: var(--sm-bg-quote); width: 100%; box-sizing: border-box;"></div>
+                <button id="create-table-btn" class="sm_modal_create_btn" style="margin-top: 25px; width: 100%; padding: 15px; font-size: 1rem; font-weight: bold;">테이블 삽입</button>
             </div>
 
-            <!-- 파일 불러오기 탭 (나중에 구현) -->
+            <!-- 파일 불러오기 탭 -->
             <div id="tab-file" class="sm_modal_tab_content">
-                <div style="padding: 20px 0; text-align: center;">
-                    <p style="opacity: 0.7; margin-bottom: 15px;">CSV 또는 엑셀 파일을 업로드하여 테이블로 변환합니다.</p>
+                <div style="margin-bottom: 20px;">
+                    <div id="file-drop-zone" style="border: 2px dashed var(--sm-border-editor); border-radius: 8px; padding: 25px; text-align: center; background: var(--sm-bg-editor); cursor: pointer; transition: all 0.2s;" onclick="document.getElementById('table-file-input').click()">
+                        <span class="material-symbols-rounded" style="font-size: 32px; opacity: 0.5; margin-bottom: 8px; display: block;">upload_file</span>
+                        <p style="opacity: 0.7; font-size: 0.9rem; margin-bottom: 5px;">CSV 또는 엑셀 파일을 선택하세요.</p>
+                        <p id="file-name-display" style="font-size: 0.8rem; color: var(--sm-color-header); font-weight: bold;"></p>
+                    </div>
                     <input type="file" id="table-file-input" accept=".csv, .xlsx, .xls" style="display: none;">
-                    <label for="sheet-select" id="sheet-select-label" class="hidden">워크시트 선택 </label>
-                    <select id="sheet-select" style="margin-bottom: 15px;" class="sm_settings_select hidden">
-                        <option value="">워크시트 선택</option>
-                    </select>
-                    <button class="sm_modal_create_btn" onclick="document.getElementById('table-file-input').click()">파일 선택</button>
-                    <p id="file-name-display" style="margin-top: 10px; font-size: 0.85rem; color: var(--sm-color-header);"></p>
                 </div>
-                <button id="import-table-btn" class="sm_modal_create_btn" disabled>파일로 생성</button>
+
+                <div style="margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+                    <div class="sm_modal_label" style="font-size: 0.8rem;">데이터 미리보기</div>
+                    <div id="sheet-select-container" class="hidden" style="align-items: center; gap: 8px;">
+                        <label class="sm_modal_label" style="font-size: 0.75rem;">시트:</label>
+                        <select id="sheet-select" class="sm_settings_select" style="padding: 2px 5px; font-size: 0.75rem; width: 100px;"></select>
+                    </div>
+                </div>
+                
+                <div id="file-preview-area" style="height: 150px; overflow: auto; border: 1px solid var(--sm-border-editor); border-radius: 6px; padding: 10px; background: var(--sm-bg-quote); font-size: 0.7rem;">
+                    <p style="text-align: center; opacity: 0.4; margin-top: 50px;">파일을 불러오면 미리보기가 표시됩니다.</p>
+                </div>
+
+                <button id="import-table-btn" class="sm_modal_create_btn" style="margin-top: 20px; width: 100%; padding: 12px;" disabled>파일로 생성</button>
             </div>
     `;
 
@@ -1535,45 +1568,87 @@ function makingTableModal() {
         const colsInput = modal.querySelector("#table-cols");
         const preview = modal.querySelector("#table-preview");
         const createBtn = modal.querySelector("#create-table-btn");
+        const gridPicker = modal.querySelector("#table-grid-picker");
+        const sizeIndicator = modal.querySelector("#table-size-indicator");
+        const gridCells = gridPicker.querySelectorAll(".sm_grid_cell");
 
         const updatePreview = () => {
             const rows = parseInt(rowsInput.value) || 0;
             const cols = parseInt(colsInput.value) || 0;
-            preview.innerHTML = "";
+            sizeIndicator.textContent = `${rows} x ${cols}`;
 
+            // 그리드 피커 하이라이트 업데이트
+            gridCells.forEach(cell => {
+                const r = parseInt(cell.dataset.row);
+                const c = parseInt(cell.dataset.col);
+                if (r < rows && c < cols) {
+                    cell.style.background = "var(--sm-color-header)";
+                    cell.style.opacity = "0.7";
+                } else {
+                    cell.style.background = "var(--sm-border-editor)";
+                    cell.style.opacity = "1";
+                }
+            });
+
+            preview.innerHTML = "";
             const displayRows = Math.min(rows, 10);
             const displayCols = Math.min(cols, 10);
 
             for (let i = 0; i < displayRows; i++) {
                 const row = document.createElement("div");
                 row.className = "table-row-preview";
+                row.style.display = "flex";
+                row.style.gap = "2px";
+                row.style.marginBottom = "2px";
                 for (let j = 0; j < displayCols; j++) {
                     const input = document.createElement("input");
                     input.type = "text";
                     input.className = "table-cell-input";
-                    input.value = (i === 0) ? `헤더 ${j + 1}` : "";
+                    input.value = (i === 0) ? `H${j + 1}` : "";
+                    input.style.width = "40px";
+                    input.style.fontSize = "0.7rem";
                     input.dataset.row = i;
                     input.dataset.col = j;
-                    const cell = document.createElement("div");
-                    cell.className = "table-cell-preview";
-                    cell.appendChild(input);
-                    row.appendChild(cell);
+                    row.appendChild(input);
                 }
                 preview.appendChild(row);
             }
 
-            // 행/열이 1개라도 있으면 버튼 활성화
             createBtn.disabled = (rows <= 0 || cols <= 0);
 
             if (rows > 10 || cols > 10) {
                 const notice = document.createElement("div");
-                notice.style.fontSize = "0.8rem";
+                notice.style.fontSize = "0.75rem";
                 notice.style.marginTop = "5px";
-                notice.style.opacity = "0.7";
-                notice.textContent = `* 프리뷰는 10x10까지만 표시됩니다. (현재: ${rows}x${cols})`;
+                notice.style.opacity = "0.6";
+                notice.textContent = `* ${rows}x${cols} 테이블이 생성됩니다.`;
                 preview.appendChild(notice);
             }
         };
+
+        let isFixed = false;
+        gridPicker.addEventListener("mousemove", (e) => {
+            if (isFixed) return; // 고정되어 있으면 값 변경 안 함
+            const cell = e.target.closest(".sm_grid_cell");
+            if (cell) {
+                const r = parseInt(cell.dataset.row) + 1;
+                const c = parseInt(cell.dataset.col) + 1;
+                rowsInput.value = r;
+                colsInput.value = c;
+                updatePreview();
+            }
+        });
+        gridPicker.addEventListener("click", () => {
+            isFixed = !isFixed;
+            // 시각적 피드백: 고정 시 테두리 색상 변경
+            if (isFixed) {
+                gridPicker.style.border = "2px solid var(--sm-color-header)";
+                gridPicker.style.boxShadow = "0 0 8px rgba(3, 102, 214, 0.3)";
+            } else {
+                gridPicker.style.border = "";
+                gridPicker.style.boxShadow = "";
+            }
+        });
 
         rowsInput.addEventListener("input", updatePreview);
         colsInput.addEventListener("input", updatePreview);
@@ -1632,17 +1707,36 @@ function makingTableModal() {
                                 const data = new Uint8Array(event.target.result);
                                 const importBtn = modal.querySelector("#import-table-btn");
                                 const sheetSelect = modal.querySelector("#sheet-select");
-                                const sheetSelectLabel = modal.querySelector("#sheet-select-label");
+                                const sheetSelectContainer = modal.querySelector("#sheet-select-container");
+                                const previewArea = modal.querySelector("#file-preview-area");
                                 let pickSheet = "";
 
-                                if (!isCsv) {
-                                    // 엑셀 처리
-                                    importBtn.disabled = true; // 시트 로드 전까지 비활성화
-                                    const sheetNames = window.excel_get_worksheets(data);
-                                    console.log("워크시트 목록:", sheetNames);
+                                const renderFilePreview = (rows) => {
+                                    previewArea.innerHTML = "";
+                                    if (!rows || rows.length === 0) return;
+                                    const table = document.createElement("table");
+                                    table.style.width = "100%";
+                                    table.style.borderCollapse = "collapse";
+                                    table.style.fontSize = "0.65rem";
+                                    rows.slice(0, 10).forEach((row, i) => {
+                                        const tr = document.createElement("tr");
+                                        const startCol = isCsv ? 0 : 1;
+                                        row.slice(startCol).forEach(cell => {
+                                            const td = document.createElement("td");
+                                            td.style.border = "1px solid var(--sm-border-editor)";
+                                            td.style.padding = "2px 4px";
+                                            td.textContent = String(cell).substring(0, 20);
+                                            tr.appendChild(td);
+                                        });
+                                        table.appendChild(tr);
+                                    });
+                                    previewArea.appendChild(table);
+                                };
 
-                                    sheetSelect.classList.remove("hidden");
-                                    sheetSelectLabel.classList.remove("hidden");
+                                if (!isCsv) {
+                                    importBtn.disabled = true;
+                                    const sheetNames = window.excel_get_worksheets(data);
+                                    sheetSelectContainer.classList.remove("hidden");
                                     sheetSelect.innerHTML = "";
                                     sheetNames.forEach(sheetName => {
                                         const option = document.createElement("option");
@@ -1651,15 +1745,27 @@ function makingTableModal() {
                                         sheetSelect.appendChild(option);
                                     });
                                     pickSheet = sheetNames[0] || "";
+
+                                    const updateExcelPreview = (sheet) => {
+                                        try {
+                                            const resultJson = window.excel_open_book(data, sheet);
+                                            renderFilePreview(JSON.parse(resultJson).Ok || []);
+                                        } catch (e) { }
+                                    };
+
                                     sheetSelect.addEventListener("change", () => {
                                         pickSheet = sheetSelect.value;
+                                        updateExcelPreview(pickSheet);
                                     });
-                                    importBtn.disabled = false; // 준비 완료
+                                    updateExcelPreview(pickSheet);
+                                    importBtn.disabled = false;
                                 } else {
-                                    // CSV는 시트 선택 필요 없음
-                                    sheetSelect.classList.add("hidden");
-                                    sheetSelectLabel.classList.add("hidden");
-                                    importBtn.disabled = false; // 즉시 활성
+                                    sheetSelectContainer.classList.add("hidden");
+                                    try {
+                                        const resultJson = window.open_csv(data);
+                                        renderFilePreview(JSON.parse(resultJson).Ok || []);
+                                    } catch (e) { }
+                                    importBtn.disabled = false;
                                 }
 
                                 // 이전 리스너 제거 후 새로 등록 (중복 방지)
@@ -1744,5 +1850,458 @@ function makingTableModal() {
         }
     });
 }
+function openTableEditorModal() {
+    const view = window.cm_instances[window.cm_instances.length - 1];
+    if (!view) return;
+    const { state } = view;
+    const { from, to } = state.selection.main;
+    const raw = state.doc.toString();
+    const ast = JSON.parse(window.cm_highlighter(raw));
+
+    function findNodeByType(nodes, from, to, targetType) {
+        if (!nodes) return null;
+        for (const node of nodes) {
+            const type = Object.keys(node)[0];
+            const data = node[type];
+            if (data && data.span) {
+                if (from >= data.span.start && to <= data.span.end) {
+                    if (type === targetType) return { ...data, type };
+                    const found = findNodeByType(data.children, from, to, targetType);
+                    if (found) return found;
+                }
+            }
+        }
+        return null;
+    }
+
+    const tableNode = findNodeByType(ast, from, to, "Table");
+    if (!tableNode) {
+        makingTableModal();
+        return;
+    }
+
+    // 테이블 데이터 파싱 (재귀적 추출)
+    let grid = [];
+    const collectCells = (node) => {
+        let cells = [];
+        if (node.children) {
+            node.children.forEach(c => {
+                const type = Object.keys(c)[0];
+                if (type === "Cell") cells.push(c[type]);
+                else cells = cells.concat(collectCells(c[type]));
+            });
+        }
+        return cells;
+    };
+
+    const collectRows = (node) => {
+        let rows = [];
+        console.log("collectRows called with node:", node);
+        if (node.children) {
+            console.log("node.children:", node.children);
+            node.children.forEach(c => {
+                const type = Object.keys(c)[0];
+                console.log("  - child type:", type, "| child:", c);
+                if (type === "Row") rows.push(c[type]);
+                else if (type !== "Cell") rows = rows.concat(collectRows(c[type]));
+            });
+        }
+        console.log("collectRows returning:", rows.length, "rows");
+        return rows;
+    };
+
+    const rows = [];
+    if (tableNode.children) {
+        tableNode.children.forEach(child => {
+            const type = Object.keys(child)[0];
+            console.log("Direct child type:", type, "| child:", child);
+            if (type === "Row") {
+                rows.push(child[type]);
+            }
+        });
+    }
+    console.log("Total rows extracted:", rows.length);
+    rows.forEach((rowData) => {
+        const cells = [];
+        if (rowData.children) {
+            rowData.children.forEach(child => {
+                const type = Object.keys(child)[0];
+                if (type === "Cell") {
+                    cells.push(child[type]);
+                }
+            });
+        }
+
+        const gridRow = [];
+        cells.forEach((cellData) => {
+            // [[ ... ]] 내부 내용 추출: span 범위 내에서 정확한 대괄호 위치를 찾아 추출
+            const cellText = raw.slice(cellData.span.start, cellData.span.end);
+            const startIdx = cellText.indexOf("[[");
+            const endIdx = cellText.lastIndexOf("]]");
+
+            let content = "";
+            if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+                content = cellText.slice(startIdx + 2, endIdx).trim();
+            } else {
+                // 안전장치: 대괄호를 못 찾은 경우 기존 방식 시도
+                content = cellText.trim();
+                if (content.startsWith("[[")) content = content.slice(2);
+                if (content.endsWith("]]")) content = content.slice(0, -2);
+                content = content.trim();
+            }
+
+            let colspan = 1;
+            let rowspan = 1;
+
+            // 속성 반복 파싱
+            while (true) {
+                const xMatch = content.match(/^#x="(\d+)"\s*/);
+                if (xMatch) {
+                    colspan = parseInt(xMatch[1]);
+                    content = content.replace(/^#x="\d+"\s*/, "").trim();
+                    continue;
+                }
+                const yMatch = content.match(/^#y="(\d+)"\s*/);
+                if (yMatch) {
+                    rowspan = parseInt(yMatch[1]);
+                    content = content.replace(/^#y="\d+"\s*/, "").trim();
+                    continue;
+                }
+                break;
+            }
+
+            gridRow.push({ content, colspan, rowspan });
+        });
+        grid.push(gridRow);
+    });
+
+    console.log("Table Editor Debug:");
+    console.log("- tableNode:", tableNode);
+    console.log("- rows found:", rows.length);
+    console.log("- grid:", grid);
+
+
+    const modalContent = `
+        <h3 style="margin-bottom:15px; border-bottom: 2px solid var(--sm-color-header); padding-bottom: 8px;">테이블 에디터</h3>
+        <!-- 조작 버튼들 -->
+        <div style="display: flex; gap: 8px; margin-bottom: 12px; align-items: center;">
+            <button id="te-undo-btn" class="sm_modal_create_btn" style="width: 36px; background: var(--sm-bg-toolbar); border: 1px solid var(--sm-border-editor); height: 36px; padding: 0; display: flex; align-items: center; justify-content: center; margin-top: 0;" title="되돌리기 (Ctrl+Z)"><span class="material-symbols-outlined" style="font-size: 18px; color: var(--sm-color-header);">undo</span></button>
+            <button id="te-redo-btn" class="sm_modal_create_btn" style="width: 36px; background: var(--sm-bg-toolbar); border: 1px solid var(--sm-border-editor); height: 36px; padding: 0; display: flex; align-items: center; justify-content: center; margin-top: 0;" title="다시하기 (Ctrl+Y)"><span class="material-symbols-outlined" style="font-size: 18px; color: var(--sm-color-header);">redo</span></button>
+            <div style="flex: 1;"></div>
+            <button id="te-merge-btn" class="sm_modal_create_btn" style="padding: 0 15px; background: #3392FF; height: 36px; font-size: 0.8rem; width: auto; margin-top: 0;">셀 합치기</button>
+            <button id="te-split-btn" class="sm_modal_create_btn" style="padding: 0 15px; background: var(--sm-border-editor); color: var(--sm-color-text); height: 36px; font-size: 0.8rem; width: auto; margin-top: 0;">선택 해제</button>
+        </div>
+
+        <div id="te-grid-container" style="height: 250px; overflow: auto; border: 1px solid var(--sm-border-editor); border-radius: 6px; background: var(--sm-bg-editor); margin-bottom: 15px; padding: 10px;">
+            <table id="te-edit-table" style="border-collapse: collapse; width: 100%; user-select: none; background: var(--sm-bg-editor);">
+                <!-- Table rows will be injected here -->
+            </table>
+        </div>
+
+        <div style="background: var(--sm-bg-quote); padding: 12px; border-radius: 6px; margin-bottom: 15px; border: 1px solid var(--sm-border-editor);">
+            <div class="sm_modal_label" style="font-size: 0.75rem; color: var(--sm-color-header); margin-bottom: 5px;">문법 미리보기 (SevenMark):</div>
+            <pre id="te-syntax-preview" style="margin: 0; font-size: 0.75rem; color: var(--sm-color-code); white-space: pre-wrap; word-break: break-all; height: 80px; overflow-y: auto; font-family: monospace;"></pre>
+        </div>
+
+        <button id="te-apply-btn" class="sm_modal_create_btn" style="width: 100%; font-weight: bold; height: 50px; font-size: 1rem;">에디터에 최종 적용</button>
+    `;
+
+    createModal(modalContent, (modal) => {
+        const table = modal.querySelector("#te-edit-table");
+        const syntaxPreview = modal.querySelector("#te-syntax-preview");
+        const mergeBtn = modal.querySelector("#te-merge-btn");
+        const splitBtn = modal.querySelector("#te-split-btn");
+        const applyBtn = modal.querySelector("#te-apply-btn");
+
+        let selection = { start: null, end: null, active: false };
+        let currentGrid = JSON.parse(JSON.stringify(grid));
+
+        //히스토리 저장 Ctrl+Z Ctrl+Y
+        let history = [];
+        let historyIndex = -1;
+        const undoBtn = modal.querySelector("#te-undo-btn");
+        const redoBtn = modal.querySelector("#te-redo-btn");
+        const updateHistoryButtons = () => {
+            if (undoBtn) {
+                undoBtn.disabled = historyIndex <= 0;
+                undoBtn.style.opacity = undoBtn.disabled ? "0.3" : "1";
+            }
+            if (redoBtn) {
+                redoBtn.disabled = historyIndex >= history.length - 1;
+                redoBtn.style.opacity = redoBtn.disabled ? "0.3" : "1";
+            }
+        };
+
+        const saveHistory = () => {
+            // 현재 상태가 히스토리의 마지막과 같다면 저장하지 않음 (중복 방지)
+            const currentState = JSON.stringify(currentGrid);
+            if (historyIndex >= 0 && history[historyIndex] === currentState) return;
+
+            historyIndex++;
+            history.splice(historyIndex, history.length - historyIndex);
+            history.push(currentState);
+            updateHistoryButtons();
+        };
+
+        const undo = () => {
+            if (historyIndex > 0) {
+                historyIndex--;
+                currentGrid = JSON.parse(history[historyIndex]);
+                renderTable();
+                updateHistoryButtons();
+            }
+        };
+
+        const redo = () => {
+            if (historyIndex < history.length - 1) {
+                historyIndex++;
+                currentGrid = JSON.parse(history[historyIndex]);
+                renderTable();
+                updateHistoryButtons();
+            }
+        };
+
+        undoBtn.addEventListener("click", undo);
+        redoBtn.addEventListener("click", redo);
+        // 초기 상태 저장
+        saveHistory();
+
+        const renderTable = () => {
+            table.innerHTML = "";
+            let occupied = [];
+            for (let i = 0; i < 100; i++) occupied[i] = []; // 여유있게 할당
+            currentGrid.forEach((row, r) => {
+                const tr = document.createElement("tr");
+                let currentCol = 0;
+                row.forEach((cell, c) => {
+                    while (occupied[r][currentCol]) currentCol++;
+
+                    const td = document.createElement("td");
+                    td.style.border = "1px solid var(--sm-border-editor)";
+                    td.style.padding = "8px";
+                    td.style.minWidth = "80px";
+                    td.style.height = "40px";
+                    td.style.textAlign = "center";
+                    td.style.background = "var(--sm-bg-quote)";
+                    td.style.color = "var(--sm-color-text)";
+                    td.classList.add("no-drag");
+
+                    const editArea = document.createElement("div");
+                    editArea.contentEditable = "false";
+                    editArea.style.outline = "none";
+                    editArea.style.minHeight = "1.2em";
+                    editArea.style.width = "100%"; // 셀 꽉 채우기
+                    editArea.textContent = cell.content;
+
+                    let originalValue = cell.content;
+
+                    editArea.addEventListener("dblclick", () => {
+                        originalValue = cell.content; // 편집 시작 시 원본 저장
+                        editArea.contentEditable = "true";
+                        editArea.focus();
+
+                        const selection = window.getSelection();
+                        const range = document.createRange();
+                        range.selectNodeContents(editArea);
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                    });
+
+                    let isCanceling = false;
+
+                    editArea.addEventListener("keydown", (e) => {
+                        if (e.key === "Escape") {
+                            isCanceling = true;
+                            cell.content = originalValue; // 데이터 복구
+                            editArea.textContent = originalValue; // UI 복구
+                            updateSyntax(); // 미리보기 복구
+                            editArea.contentEditable = "false";
+                            editArea.blur();
+                            isCanceling = false;
+                        }
+
+                        if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            editArea.blur();
+                        }
+                    });
+
+                    editArea.addEventListener("blur", () => {
+                        if (!isCanceling) {
+                            if (originalValue !== editArea.textContent) {
+                                cell.content = editArea.textContent;
+                                saveHistory(); // 내용 변경 시 히스토리 저장
+                                originalValue = cell.content; // 기준값 업데이트
+                            }
+                        }
+                        editArea.contentEditable = "false";
+                    });
+
+                    td.appendChild(editArea);
+
+                    td.colSpan = cell.colspan;
+                    td.rowSpan = cell.rowspan;
+                    td.dataset.r = r;
+                    td.dataset.c = currentCol;
+
+                    for (let x = 0; x < cell.colspan; x++) {
+                        for (let y = 0; y < cell.rowspan; y++) {
+                            if (!occupied[r + y]) occupied[r + y] = [];
+                            occupied[r + y][currentCol + x] = true;
+                        }
+                    }
+
+                    editArea.addEventListener("input", (e) => {
+                        cell.content = e.target.textContent;
+                        updateSyntax();
+                    });
+
+                    td.addEventListener("mousedown", (e) => {
+                        if (e.target === editArea) return;
+                        selection.active = true;
+                        selection.start = { r, c: parseInt(td.dataset.c) };
+                        selection.end = { r, c: parseInt(td.dataset.c) };
+                        updateSelectionUI();
+                    });
+
+                    td.addEventListener("mouseenter", () => {
+                        if (selection.active) {
+                            selection.end = { r, c: parseInt(td.dataset.c) };
+                            updateSelectionUI();
+                        }
+                    });
+
+                    tr.appendChild(td);
+                    currentCol += cell.colspan;
+                });
+                table.appendChild(tr);
+            });
+            updateSyntax();
+        };
+
+        const updateSelectionUI = () => {
+            const tds = table.querySelectorAll("td");
+            if (!selection.start || !selection.end) {
+                tds.forEach(t => { t.style.backgroundColor = ""; t.style.outline = ""; });
+                return;
+            }
+            const rStart = Math.min(selection.start.r, selection.end.r);
+            const rEnd = Math.max(selection.start.r, selection.end.r);
+            const cStart = Math.min(selection.start.c, selection.end.c);
+            const cEnd = Math.max(selection.start.c, selection.end.c);
+
+            tds.forEach(td => {
+                const r = parseInt(td.dataset.r);
+                const c = parseInt(td.dataset.c);
+                const rs = parseInt(td.rowSpan || 1);
+                const cs = parseInt(td.colSpan || 1);
+
+                const inRange = (r + rs - 1 >= rStart && r <= rEnd && c + cs - 1 >= cStart && c <= cEnd);
+                if (inRange) {
+                    td.style.backgroundColor = "var(--sm-color-header)";
+                    td.style.opacity = "0.8";
+                    td.style.outline = "2px solid white";
+                    td.style.outlineOffset = "-2px";
+                } else {
+                    td.style.backgroundColor = "";
+                    td.style.opacity = "1";
+                    td.style.outline = "";
+                }
+            });
+        };
+
+        const updateSyntax = () => {
+            let out = "{{{#table\n";
+            currentGrid.forEach(row => {
+                out += "[[ ";
+                row.forEach(cell => {
+                    let tags = "";
+                    if (cell.colspan > 1) tags += `#x="${cell.colspan}" `;
+                    if (cell.rowspan > 1) tags += `#y="${cell.rowspan}" `;
+                    out += `[[${tags} ${cell.content}]] `;
+                });
+                out += "]]\n";
+            });
+            out += "}}}";
+            syntaxPreview.textContent = out;
+        };
+
+        const handleMouseUp = () => { selection.active = false; };
+        window.addEventListener("mouseup", handleMouseUp);
+
+        mergeBtn.addEventListener("click", () => {
+            if (!selection.start || !selection.end) return;
+            const rStart = Math.min(selection.start.r, selection.end.r);
+            const rEnd = Math.max(selection.start.r, selection.end.r);
+            const cStart = Math.min(selection.start.c, selection.end.c);
+            const cEnd = Math.max(selection.start.c, selection.end.c);
+
+            const targetColspan = (cEnd - cStart + 1);
+            const targetRowspan = (rEnd - rStart + 1);
+
+            let newGrid = [];
+            for (let r = 0; r < currentGrid.length; r++) {
+                let newRow = [];
+                let logicCol = 0;
+                for (let i = 0; i < currentGrid[r].length; i++) {
+                    const cell = currentGrid[r][i];
+                    if (r === rStart && logicCol === cStart) {
+                        newRow.push({ content: cell.content, colspan: targetColspan, rowspan: targetRowspan });
+                    } else {
+                        const inMergeRange = (r >= rStart && r <= rEnd && logicCol >= cStart && logicCol <= cEnd);
+                        if (!inMergeRange) {
+                            newRow.push(cell);
+                        }
+                    }
+                    logicCol += cell.colspan;
+                }
+                if (newRow.length > 0) newGrid.push(newRow);
+            }
+            currentGrid = newGrid;
+            selection.start = null;
+            selection.end = null;
+            saveHistory(); // 합치기 후 히스토리 저장
+            renderTable();
+        });
+
+        // 단축키 리스너
+        const handleKeyDown = (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                if (e.key.toLowerCase() === 'z') {
+                    e.preventDefault();
+                    undo();
+                } else if (e.key.toLowerCase() === 'y') {
+                    e.preventDefault();
+                    redo();
+                }
+            }
+        };
+        window.addEventListener("keydown", handleKeyDown);
+
+        splitBtn.addEventListener("click", () => {
+            selection.start = null;
+            selection.end = null;
+            updateSelectionUI();
+        });
+
+        applyBtn.addEventListener("click", () => {
+            updateSyntax();
+            const finalSyntax = syntaxPreview.textContent;
+            view.dispatch({
+                changes: { from: tableNode.span.start, to: tableNode.span.end, insert: finalSyntax },
+                selection: { anchor: tableNode.span.start + finalSyntax.length }
+            });
+            modal.remove();
+            window.removeEventListener("mouseup", handleMouseUp);
+            window.removeEventListener("keydown", handleKeyDown);
+            view.focus();
+        });
+
+        renderTable();
+    });
+}
+window.openTableEditorModal = openTableEditorModal;
+window.makingTableModal = makingTableModal;
+
 // 전역에 등록하여 ReferenceError 방지
 window.init_codemirror = init_codemirror;
