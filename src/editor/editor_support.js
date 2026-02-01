@@ -109,7 +109,7 @@ var cm_css = `
     --sm-color-null: #bdc3c7;
     --sm-color-control: #d63031;
     --sm-border-styled: #fab1a0;
-    --sm-color-literal: #2d3436;
+    --sm-color-literal: #3a484d;
     --sm-bg-literal: #dfe6e9;
     --sm-color-fold: #6c5ce7;
     --sm-color-ruby: #e84393;
@@ -165,7 +165,7 @@ body.dark {
     --sm-color-null: #6a737d;
     --sm-color-control: #f48771;
     --sm-border-styled: #f48771;
-    --sm-color-literal: #ce9178;
+    --sm-color-literal: #9fcfe0ff;
     --sm-bg-literal: #3c3c3c;
     --sm-color-fold: #b392f0;
     --sm-color-ruby: #c586c0;
@@ -220,7 +220,7 @@ body.dark {
 .cm-sm-Null { color: var(--sm-color-null); text-decoration: line-through; }
 .cm-sm-If, .cm-sm-Define { color: var(--sm-color-control); font-weight: bold; }
 .cm-sm-Styled { border: 1px solid var(--sm-border-styled); border-radius: 4px; padding: 0 2px; }
-.cm-sm-Literal { color: var(--sm-color-literal); }
+.cm-sm-Literal { color: var(--sm-color-literal); font-family: monospace; font-weight: bold; padding: 0 2px; }
 .cm-sm-Fold { color: var(--sm-color-fold); font-weight: bold; }
 .cm-sm-Ruby { color: var(--sm-color-ruby); border-bottom: 1px dotted var(--sm-color-ruby); }
 .cm-sm-Table { border: 1px solid var(--sm-border-table); }
@@ -1159,6 +1159,14 @@ function setup_toolbar(CM) {
             onClick: () => toggleSyntax("{{{#code #lang=\"javascript\"\n", "\n}}}", "Code")
         },
         {
+            id: "sm-toolbar-literal",
+            astType: "Literal",
+            className: "sm_toolbar_btn",
+            text: "data_object",
+            title: "리터럴 (세븐마크 문법 처리안함)",
+            onClick: () => toggleSyntax("{{{\n", "\n}}}", "Literal")
+        },
+        {
             id: "sm-toolbar-folder",
             astType: "Fold",
             className: "sm_toolbar_btn",
@@ -1369,8 +1377,8 @@ function setup_toolbar(CM) {
                             </div>
                             <div class="sm_settings_row" style="margin-bottom: 0;">
                                 <button class="sm_modal_create_btn" id="sm-theme-reset-btn">기본값으로</button>
-                                <button class="sm_modal_create_btn" id="sm-theme-save-btn">테마json 다운로드</button>
-                                <button class="sm_modal_create_btn" id="sm-theme-load-btn">테마json 업로드</button>
+                                <button class="sm_modal_create_btn" id="sm-theme-save-btn">테마 다운로드</button>
+                                <button class="sm_modal_create_btn" id="sm-theme-load-btn">테마 업로드</button>
                             </div>
                         </div>
                         <div class="sm_settings_info_box">
@@ -1626,7 +1634,7 @@ function findNodeByType(nodes, from, to, targetType) {
     }
     return null;
 }
-function createModal(content, onMount) {
+function createModal(content, onMount, isClosingWarning = false) {
     const sm_ed_area = document.getElementById("sm-editor-raw");
     const modal = document.createElement("div");
     modal.className = "sm_modal";
@@ -1640,6 +1648,9 @@ function createModal(content, onMount) {
     `;
     const closeBtn = modal.querySelector(".sm_modal_close");
     closeBtn.addEventListener("click", () => {
+        if (isClosingWarning) {
+            if (!confirm("모든 변경사항이 저장되지 않을 수 있습니다. 정말로 종료하시겠습니까?")) return;
+        }
         modal.remove();
     });
 
@@ -2045,7 +2056,7 @@ function makingTableModal() {
                 }
             });
         }
-    });
+    }, true);
 }
 function openTableEditorModal() {
     const view = window.cm_instances[window.cm_instances.length - 1];
@@ -2071,9 +2082,36 @@ function openTableEditorModal() {
         return null;
     }
 
+    // 대비되는 색상(검정/흰색) 계산 함수
+    const getContrastColor = (colorProp) => {
+        let r, g, b;
+        if (!colorProp) return 'var(--sm-color-text)'; // Fallback
+
+        if (colorProp.indexOf('#') === 0) {
+            let hex = colorProp.slice(1);
+            if (hex.length === 3) {
+                hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+            }
+            if (hex.length !== 6) return 'var(--sm-color-text)';
+            r = parseInt(hex.slice(0, 2), 16);
+            g = parseInt(hex.slice(2, 4), 16);
+            b = parseInt(hex.slice(4, 6), 16);
+        } else if (colorProp.startsWith('rgb')) {
+            const parts = colorProp.match(/\d+/g);
+            if (!parts || parts.length < 3) return 'var(--sm-color-text)';
+            r = parseInt(parts[0]);
+            g = parseInt(parts[1]);
+            b = parseInt(parts[2]);
+        } else {
+            return 'var(--sm-color-text)';
+        }
+        const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+        return (yiq >= 128) ? 'black' : 'white';
+    };
+
     const tableNode = findNodeByType(ast, from, to, "Table");
     if (!tableNode) {
-        makingTableModal();
+        alert("현재 위치한 요소는 테이블이 아니라서\n테이블 편집 모드를 실행할 수 없습니다.");
         return;
     }
 
@@ -2186,7 +2224,8 @@ function openTableEditorModal() {
             <button id="te-redo-btn" class="sm_modal_create_btn" style="width: 36px; background: var(--sm-bg-toolbar); border: 1px solid var(--sm-border-editor); height: 36px; padding: 0; display: flex; align-items: center; justify-content: center; margin-top: 0;" title="다시하기 (Ctrl+Y)"><span class="material-symbols-outlined" style="font-size: 18px; color: var(--sm-color-header);">redo</span></button>
             <div style="flex: 1;"></div>
             <button id="te-merge-btn" class="sm_modal_create_btn" style="padding: 0 15px; height: 36px; font-size: 0.8rem; width: auto; margin-top: 0;">셀 합치기</button>
-            <button id="te-split-btn" class="sm_modal_create_btn" style="padding: 0 15px; background: var(--sm-bg-editor); color: var(--sm-color-text); border: 1px solid var(--sm-border-editor); height: 36px; font-size: 0.8rem; width: auto; margin-top: 0;">선택 해제</button>
+            <button id="te-unmerge-btn" class="sm_modal_create_btn" style="padding: 0 15px; height: 36px; font-size: 0.8rem; width: auto; margin-top: 0;">셀 분할</button>
+            <button id="te-deselect-btn" class="sm_modal_create_btn" style="padding: 0 15px; background: var(--sm-bg-editor); color: var(--sm-color-text); border: 1px solid var(--sm-border-editor); height: 36px; font-size: 0.8rem; width: auto; margin-top: 0;">선택 해제</button>
         </div>
 
         <div id="te-grid-container" style="height: 250px; overflow: auto; border: 1px solid var(--sm-border-editor); border-radius: 6px; background: var(--sm-bg-editor); margin-bottom: 15px; padding: 10px;">
@@ -2207,7 +2246,8 @@ function openTableEditorModal() {
         const table = modal.querySelector("#te-edit-table");
         const syntaxPreview = modal.querySelector("#te-syntax-preview");
         const mergeBtn = modal.querySelector("#te-merge-btn");
-        const splitBtn = modal.querySelector("#te-split-btn");
+        const unmergeBtn = modal.querySelector("#te-unmerge-btn");
+        const deselectBtn = modal.querySelector("#te-deselect-btn");
         const applyBtn = modal.querySelector("#te-apply-btn");
 
         let selection = { start: null, end: null, active: false };
@@ -2378,8 +2418,16 @@ function openTableEditorModal() {
 
         const updateSelectionUI = () => {
             const tds = table.querySelectorAll("td");
+            // 현재 테마의 헤더 색상(선택 색상)을 가져와 대비색 계산
+            const themeHeaderColor = getComputedStyle(document.body).getPropertyValue('--sm-color-header').trim();
+            const contrastTextColor = getContrastColor(themeHeaderColor);
+
             if (!selection.start || !selection.end) {
-                tds.forEach(t => { t.style.backgroundColor = ""; t.style.outline = ""; });
+                tds.forEach(t => {
+                    t.style.background = "var(--sm-bg-quote)";
+                    t.style.color = "var(--sm-color-text)";
+                    t.style.outline = "";
+                });
                 return;
             }
             const rStart = Math.min(selection.start.r, selection.end.r);
@@ -2396,11 +2444,13 @@ function openTableEditorModal() {
                 const inRange = (r + rs - 1 >= rStart && r <= rEnd && c + cs - 1 >= cStart && c <= cEnd);
                 if (inRange) {
                     td.style.backgroundColor = "var(--sm-color-header)";
+                    td.style.color = contrastTextColor; // 대비되는 텍스트 색상 적용
                     td.style.opacity = "0.8";
                     td.style.outline = "2px solid white";
                     td.style.outlineOffset = "-2px";
                 } else {
-                    td.style.backgroundColor = "";
+                    td.style.backgroundColor = "var(--sm-bg-quote)";
+                    td.style.color = "var(--sm-color-text)";
                     td.style.opacity = "1";
                     td.style.outline = "";
                 }
@@ -2475,9 +2525,121 @@ function openTableEditorModal() {
         };
         window.addEventListener("keydown", handleKeyDown);
 
-        splitBtn.addEventListener("click", () => {
+        unmergeBtn.addEventListener("click", () => {
+            if (!selection.start || !selection.end) return;
+
+            // 1. 현재 그리드를 Dense Array로 변환 (모든 셀 좌표화)
+            let denseGrid = [];
+            let occupied = [];
+            for (let r = 0; r < currentGrid.length; r++) occupied[r] = [];
+
+            for (let r = 0; r < currentGrid.length; r++) {
+                let cIndex = 0;
+                for (let i = 0; i < currentGrid[r].length; i++) {
+                    while (occupied[r][cIndex]) cIndex++; // 이미 차지된 자리 스킵
+                    const cell = currentGrid[r][i];
+                    if (!denseGrid[r]) denseGrid[r] = [];
+
+                    // 2D 배열에 정보 채우기
+                    for (let y = 0; y < cell.rowspan; y++) {
+                        for (let x = 0; x < cell.colspan; x++) {
+                            const targetR = r + y;
+                            const targetC = cIndex + x;
+                            if (!denseGrid[targetR]) denseGrid[targetR] = [];
+                            if (!occupied[targetR]) occupied[targetR] = [];
+
+                            occupied[targetR][targetC] = true;
+                            denseGrid[targetR][targetC] = {
+                                content: (x === 0 && y === 0) ? cell.content : "",
+                                colspan: cell.colspan,
+                                rowspan: cell.rowspan,
+                                isOrigin: (x === 0 && y === 0),
+                                originR: r,
+                                originC: cIndex
+                            };
+                        }
+                    }
+                    cIndex += cell.colspan;
+                }
+            }
+
+            // 2. 선택 영역 내의 '병합된 셀'을 찾아 분할 (1x1로 초기화)
+            const rStart = Math.min(selection.start.r, selection.end.r);
+            const rEnd = Math.max(selection.start.r, selection.end.r);
+            const cStart = Math.min(selection.start.c, selection.end.c);
+            const cEnd = Math.max(selection.start.c, selection.end.c);
+
+            let hasChanged = false;
+            for (let r = rStart; r <= rEnd; r++) {
+                for (let c = cStart; c <= cEnd; c++) {
+                    if (denseGrid[r] && denseGrid[r][c]) {
+                        const cell = denseGrid[r][c];
+                        // 병합된 셀의 원본(isOrigin)인 경우만 처리
+                        if (cell.isOrigin && (cell.colspan > 1 || cell.rowspan > 1)) {
+                            // 범위 체크: 셀 전체가 선택 영역에 포함되는지 확인 (선택적)
+                            // 여기서는 단순히 선택된 영역에 걸친 병합셀을 모두 쪼갭니다.
+
+                            // 분할 로직: 해당 셀이 차지하던 영역을 모두 개별 1x1 셀로 변경
+                            for (let y = 0; y < cell.rowspan; y++) {
+                                for (let x = 0; x < cell.colspan; x++) {
+                                    const tr = r + y;
+                                    const tc = c + x;
+                                    if (denseGrid[tr] && denseGrid[tr][tc]) {
+                                        denseGrid[tr][tc] = {
+                                            content: (x === 0 && y === 0) ? cell.content : "", // 내용은 첫 셀에만 유지하고 나머지는 빈값
+                                            colspan: 1,
+                                            rowspan: 1,
+                                            isOrigin: true,
+                                            originR: tr,
+                                            originC: tc
+                                        };
+                                    }
+                                }
+                            }
+                            hasChanged = true;
+                        }
+                    }
+                }
+            }
+
+            if (!hasChanged) return;
+
+            // 3. Dense Array를 다시 SevenMark Table Grid 포맷으로 변환
+            let newGrid = [];
+            for (let r = 0; r < denseGrid.length; r++) {
+                let newRow = [];
+                if (!denseGrid[r]) continue;
+
+                for (let c = 0; c < denseGrid[r].length; c++) {
+                    const cell = denseGrid[r][c];
+                    if (!cell) continue;
+
+                    // 원본 시작점인 경우에만 추가 (나머지는 다른 셀의 colspan/rowspan에 의해 커버됨)
+                    // 분할된 셀들은 모두 1x1, isOrigin=true가 되었으므로 모두 추가됨
+                    if (cell.isOrigin) {
+                        // 만약 이 셀이 위쪽 행의 rowspan에 의해 덮여야 하는 위치라면?
+                        // 이미 위에서 분할 처리했으므로 denseGrid 상태가 정답임.
+                        // 다만 재구성 시 '덮이는' 셀은 건너뛰어야 함.
+                        // denseGrid 로직상 isOrigin이 true면 덮이는 셀이 아님.
+                        newRow.push({
+                            content: cell.content,
+                            colspan: cell.colspan,
+                            rowspan: cell.rowspan
+                        });
+                    }
+                }
+                if (newRow.length > 0) newGrid.push(newRow);
+            }
+
+            currentGrid = newGrid;
+            saveHistory();
+            renderTable();
+        });
+
+        deselectBtn.addEventListener("click", () => {
             selection.start = null;
             selection.end = null;
+
             updateSelectionUI();
         });
 
@@ -2495,7 +2657,7 @@ function openTableEditorModal() {
         });
 
         renderTable();
-    });
+    }, true);
 }
 window.openTableEditorModal = openTableEditorModal;
 window.makingTableModal = makingTableModal;

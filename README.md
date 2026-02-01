@@ -22,7 +22,7 @@ Rust의 강력한 성능과 안전성을 바탕으로, 웹 브라우저에서도
 
 ---
 
-## 📦 설치 및 빌드 (Installation & Build)
+## 설치 및 빌드 (Installation & Build)
 
 이 프로젝트는 Rust와 `wasm-pack`을 사용하여 빌드됩니다.
 
@@ -40,6 +40,11 @@ wasm-pack build --target web --dev
 ./build.bat
 # Linux/MacOS
 ./build.sh
+
+# 플레이그라운드 서버 (cargo-make 필요)
+cargo make playground
+# 또는
+cargo make pg
 ```
 
 ---
