@@ -2175,7 +2175,7 @@ function openTableEditorModal() {
             const startIdx = cellText.indexOf("[[");
             const endIdx = cellText.lastIndexOf("]]");
 
-            let content = "";
+            let content;
             if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
                 content = cellText.slice(startIdx + 2, endIdx).trim();
             } else {
@@ -2311,7 +2311,7 @@ function openTableEditorModal() {
             currentGrid.forEach((row, r) => {
                 const tr = document.createElement("tr");
                 let currentCol = 0;
-                row.forEach((cell, c) => {
+                row.forEach((cell) => {
                     while (occupied[r][currentCol]) currentCol++;
 
                     const td = document.createElement("td");
@@ -2394,7 +2394,7 @@ function openTableEditorModal() {
                         updateSyntax();
                     });
 
-                    td.addEventListener("mousedown", (e) => {
+                    td.addEventListener("mousedown", () => {
                         if (editArea.contentEditable === "true") return; // 드래그불가 해결
                         selection.active = true;
                         selection.start = { r, c: parseInt(td.dataset.c) };
