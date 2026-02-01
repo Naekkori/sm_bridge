@@ -756,7 +756,7 @@ var lastSetTop = { editor: -1, preview: -1 };
 const lerpFactor = 0.2;
 export async function init_codemirror(parent, initialDoc = "") {
     const CM = await ensure_codemirror();
-    const { EditorView, EditorState, basicSetup, keymap, undoDepth, redoDepth, indentWithTab, openSearchPanel, closeSearchPanel } = CM;
+    const { EditorView, EditorState, basicSetup, keymap, undoDepth, redoDepth, indentWithTab} = CM;
 
     const style = document.createElement("style");
     style.textContent = cm_css;
@@ -1563,7 +1563,7 @@ function wrapSelection(before, after = before) {
     const selectedText = state.sliceDoc(from, to);
     const isWrap = selectedText.startsWith(before) && selectedText.endsWith(after);
 
-    if (isWrap && from != to) {
+    if (isWrap && from !== to) {
         view.dispatch(state.replaceSelection(selectedText.slice(before.length, -after.length)));
     } else {
         view.dispatch({
@@ -1611,8 +1611,7 @@ export function get_cm_ast() {
     if (!view) return;
     const { state } = view;
     const raw = state.doc.toString();
-    const ast = JSON.parse(window.cm_highlighter(raw));
-    return ast;
+    return JSON.parse(window.cm_highlighter(raw));
 }
 window.get_cm_ast = get_cm_ast;
 
@@ -1928,7 +1927,7 @@ function makingTableModal() {
                                     table.style.width = "100%";
                                     table.style.borderCollapse = "collapse";
                                     table.style.fontSize = "0.65rem";
-                                    rows.slice(0, 10).forEach((row, i) => {
+                                    rows.slice(0, 10).forEach((row) => {
                                         const tr = document.createElement("tr");
                                         const startCol = isCsv ? 0 : 1;
                                         row.slice(startCol).forEach(cell => {
