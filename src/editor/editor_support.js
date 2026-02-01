@@ -2071,9 +2071,36 @@ function openTableEditorModal() {
         return null;
     }
 
+    // 대비되는 색상(검정/흰색) 계산 함수
+    const getContrastColor = (colorProp) => {
+        let r, g, b;
+        if (!colorProp) return 'var(--sm-color-text)'; // Fallback
+
+        if (colorProp.indexOf('#') === 0) {
+            let hex = colorProp.slice(1);
+            if (hex.length === 3) {
+                hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+            }
+            if (hex.length !== 6) return 'var(--sm-color-text)';
+            r = parseInt(hex.slice(0, 2), 16);
+            g = parseInt(hex.slice(2, 4), 16);
+            b = parseInt(hex.slice(4, 6), 16);
+        } else if (colorProp.startsWith('rgb')) {
+            const parts = colorProp.match(/\d+/g);
+            if (!parts || parts.length < 3) return 'var(--sm-color-text)';
+            r = parseInt(parts[0]);
+            g = parseInt(parts[1]);
+            b = parseInt(parts[2]);
+        } else {
+            return 'var(--sm-color-text)';
+        }
+        const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+        return (yiq >= 128) ? 'black' : 'white';
+    };
+
     const tableNode = findNodeByType(ast, from, to, "Table");
     if (!tableNode) {
-        makingTableModal();
+        alert("현재 위치한 요소는 테이블이 아니라서\n테이블 편집 모드를 실행할 수 없습니다.");
         return;
     }
 
@@ -2378,8 +2405,16 @@ function openTableEditorModal() {
 
         const updateSelectionUI = () => {
             const tds = table.querySelectorAll("td");
+            // 현재 테마의 헤더 색상(선택 색상)을 가져와 대비색 계산
+            const themeHeaderColor = getComputedStyle(document.body).getPropertyValue('--sm-color-header').trim();
+            const contrastTextColor = getContrastColor(themeHeaderColor);
+
             if (!selection.start || !selection.end) {
-                tds.forEach(t => { t.style.backgroundColor = ""; t.style.outline = ""; });
+                tds.forEach(t => {
+                    t.style.background = "var(--sm-bg-quote)";
+                    t.style.color = "var(--sm-color-text)";
+                    t.style.outline = "";
+                });
                 return;
             }
             const rStart = Math.min(selection.start.r, selection.end.r);
@@ -2396,11 +2431,13 @@ function openTableEditorModal() {
                 const inRange = (r + rs - 1 >= rStart && r <= rEnd && c + cs - 1 >= cStart && c <= cEnd);
                 if (inRange) {
                     td.style.backgroundColor = "var(--sm-color-header)";
+                    td.style.color = contrastTextColor; // 대비되는 텍스트 색상 적용
                     td.style.opacity = "0.8";
                     td.style.outline = "2px solid white";
                     td.style.outlineOffset = "-2px";
                 } else {
-                    td.style.backgroundColor = "";
+                    td.style.backgroundColor = "var(--sm-bg-quote)";
+                    td.style.color = "var(--sm-color-text)";
                     td.style.opacity = "1";
                     td.style.outline = "";
                 }
