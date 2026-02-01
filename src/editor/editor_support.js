@@ -1636,6 +1636,9 @@ function findNodeByType(nodes, from, to, targetType) {
 }
 function createModal(content, onMount, isClosingWarning = false) {
     const sm_ed_area = document.getElementById("sm-editor-raw");
+    if(sm_ed_area.querySelector(".sm_modal")){
+        return; // 이미 생성된 경우 무시 (DOM 생성 전 체크)
+    }
     const modal = document.createElement("div");
     modal.className = "sm_modal";
     modal.innerHTML = `
@@ -1653,7 +1656,6 @@ function createModal(content, onMount, isClosingWarning = false) {
         }
         modal.remove();
     });
-
     sm_ed_area.appendChild(modal);
 
     // 모달이 DOM에 추가된 후 실행할 콜백 (이벤트 리스너 등록 등)
