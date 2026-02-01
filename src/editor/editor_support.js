@@ -1626,7 +1626,7 @@ function findNodeByType(nodes, from, to, targetType) {
     }
     return null;
 }
-function createModal(content, onMount) {
+function createModal(content, onMount, isClosingWarning = false) {
     const sm_ed_area = document.getElementById("sm-editor-raw");
     const modal = document.createElement("div");
     modal.className = "sm_modal";
@@ -1640,6 +1640,9 @@ function createModal(content, onMount) {
     `;
     const closeBtn = modal.querySelector(".sm_modal_close");
     closeBtn.addEventListener("click", () => {
+        if (isClosingWarning) {
+            if (!confirm("모든 변경사항이 저장되지 않을 수 있습니다. 정말로 종료하시겠습니까?")) return;
+        }
         modal.remove();
     });
 
@@ -2045,7 +2048,7 @@ function makingTableModal() {
                 }
             });
         }
-    });
+    }, true);
 }
 function openTableEditorModal() {
     const view = window.cm_instances[window.cm_instances.length - 1];
@@ -2646,7 +2649,7 @@ function openTableEditorModal() {
         });
 
         renderTable();
-    });
+    }, true);
 }
 window.openTableEditorModal = openTableEditorModal;
 window.makingTableModal = makingTableModal;
