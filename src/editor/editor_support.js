@@ -1958,7 +1958,15 @@ function makingTableModal() {
                                     const updateExcelPreview = (sheet) => {
                                         try {
                                             const resultJson = window.excel_open_book(data, sheet);
-                                            renderFilePreview(JSON.parse(resultJson).Ok || []);
+                                            let rows = [];
+                                            try {
+                                                rows = JSON.parse(resultJson).Ok || [];
+                                            } catch (e) {
+                                                throw Error("데이터를 불러올 수 없습니다.");
+                                            }
+                                            // 첫 번째 열이 모두 비어있는지 확인 (사용자 실수 보정)
+                                            const isFirstColEmpty = rows.length > 0 && rows.every(r => r[0] === null || r[0] === undefined || String(r[0]).trim() === "");
+                                            renderFilePreview(isFirstColEmpty ? rows.map(row => row.slice(1)) : rows);
                                         } catch (e) { }
                                     };
 
@@ -1991,7 +1999,7 @@ function makingTableModal() {
                                         }
 
                                         const result = JSON.parse(resultJson);
-                                        const rows = result.Ok || result;
+                                        let rows = result.Ok || result;
 
                                         if (!Array.isArray(rows)) {
                                             newImportBtn.disabled = true;
@@ -2015,10 +2023,30 @@ function makingTableModal() {
                                             return cell;
                                         }
 
+                                        // 첫 번째 행이 파일명(메타데이터)인지 확인하여 제거
+                                        if (rows.length > 1) {
+                                            const firstRow = rows[0];
+                                            const firstVal = cleanCellValue(firstRow[0]);
+                                            const isFirstCellValid = firstVal !== null && firstVal !== undefined && String(firstVal).trim() !== "";
+                                            const isRestEmpty = firstRow.slice(1).every(c => {
+                                                const val = cleanCellValue(c);
+                                                return val === null || val === undefined || String(val).trim() === "";
+                                            });
+                                            if (isFirstCellValid && isRestEmpty) rows = rows.slice(1);
+                                        }
+
+                                        // 첫 번째 열이 비어있는지 확인
+                                        let startCol = 0;
+                                        if (rows.length > 0) {
+                                            const isFirstColEmpty = rows.every(r => {
+                                                const val = cleanCellValue(r[0]);
+                                                return val === null || val === undefined || String(val).trim() === "";
+                                            });
+                                            if (isFirstColEmpty) startCol = 1;
+                                        }
+
                                         let tableText = "{{{#table\n";
                                         for (let i = 0; i < rows.length; i++) {
-                                            // 엑셀일 때만 0번 열 스킵 (파일명)
-                                            let startCol = (!isCsv) ? 1 : 0;
                                             tableText += "[[ ";
                                             for (let j = startCol; j < rows[i].length; j++) {
                                                 tableText += `[[ ${cleanCellValue(rows[i][j])} ]] `;
