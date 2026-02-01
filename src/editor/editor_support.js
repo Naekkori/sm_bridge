@@ -1369,8 +1369,8 @@ function setup_toolbar(CM) {
                             </div>
                             <div class="sm_settings_row" style="margin-bottom: 0;">
                                 <button class="sm_modal_create_btn" id="sm-theme-reset-btn">기본값으로</button>
-                                <button class="sm_modal_create_btn" id="sm-theme-save-btn">테마json 다운로드</button>
-                                <button class="sm_modal_create_btn" id="sm-theme-load-btn">테마json 업로드</button>
+                                <button class="sm_modal_create_btn" id="sm-theme-save-btn">테마 다운로드</button>
+                                <button class="sm_modal_create_btn" id="sm-theme-load-btn">테마 업로드</button>
                             </div>
                         </div>
                         <div class="sm_settings_info_box">
@@ -2213,7 +2213,8 @@ function openTableEditorModal() {
             <button id="te-redo-btn" class="sm_modal_create_btn" style="width: 36px; background: var(--sm-bg-toolbar); border: 1px solid var(--sm-border-editor); height: 36px; padding: 0; display: flex; align-items: center; justify-content: center; margin-top: 0;" title="다시하기 (Ctrl+Y)"><span class="material-symbols-outlined" style="font-size: 18px; color: var(--sm-color-header);">redo</span></button>
             <div style="flex: 1;"></div>
             <button id="te-merge-btn" class="sm_modal_create_btn" style="padding: 0 15px; height: 36px; font-size: 0.8rem; width: auto; margin-top: 0;">셀 합치기</button>
-            <button id="te-split-btn" class="sm_modal_create_btn" style="padding: 0 15px; background: var(--sm-bg-editor); color: var(--sm-color-text); border: 1px solid var(--sm-border-editor); height: 36px; font-size: 0.8rem; width: auto; margin-top: 0;">선택 해제</button>
+            <button id="te-unmerge-btn" class="sm_modal_create_btn" style="padding: 0 15px; height: 36px; font-size: 0.8rem; width: auto; margin-top: 0;">셀 분할</button>
+            <button id="te-deselect-btn" class="sm_modal_create_btn" style="padding: 0 15px; background: var(--sm-bg-editor); color: var(--sm-color-text); border: 1px solid var(--sm-border-editor); height: 36px; font-size: 0.8rem; width: auto; margin-top: 0;">선택 해제</button>
         </div>
 
         <div id="te-grid-container" style="height: 250px; overflow: auto; border: 1px solid var(--sm-border-editor); border-radius: 6px; background: var(--sm-bg-editor); margin-bottom: 15px; padding: 10px;">
@@ -2234,7 +2235,8 @@ function openTableEditorModal() {
         const table = modal.querySelector("#te-edit-table");
         const syntaxPreview = modal.querySelector("#te-syntax-preview");
         const mergeBtn = modal.querySelector("#te-merge-btn");
-        const splitBtn = modal.querySelector("#te-split-btn");
+        const unmergeBtn = modal.querySelector("#te-unmerge-btn");
+        const deselectBtn = modal.querySelector("#te-deselect-btn");
         const applyBtn = modal.querySelector("#te-apply-btn");
 
         let selection = { start: null, end: null, active: false };
@@ -2512,9 +2514,121 @@ function openTableEditorModal() {
         };
         window.addEventListener("keydown", handleKeyDown);
 
-        splitBtn.addEventListener("click", () => {
+        unmergeBtn.addEventListener("click", () => {
+            if (!selection.start || !selection.end) return;
+
+            // 1. 현재 그리드를 Dense Array로 변환 (모든 셀 좌표화)
+            let denseGrid = [];
+            let occupied = [];
+            for (let r = 0; r < currentGrid.length; r++) occupied[r] = [];
+
+            for (let r = 0; r < currentGrid.length; r++) {
+                let cIndex = 0;
+                for (let i = 0; i < currentGrid[r].length; i++) {
+                    while (occupied[r][cIndex]) cIndex++; // 이미 차지된 자리 스킵
+                    const cell = currentGrid[r][i];
+                    if (!denseGrid[r]) denseGrid[r] = [];
+
+                    // 2D 배열에 정보 채우기
+                    for (let y = 0; y < cell.rowspan; y++) {
+                        for (let x = 0; x < cell.colspan; x++) {
+                            const targetR = r + y;
+                            const targetC = cIndex + x;
+                            if (!denseGrid[targetR]) denseGrid[targetR] = [];
+                            if (!occupied[targetR]) occupied[targetR] = [];
+
+                            occupied[targetR][targetC] = true;
+                            denseGrid[targetR][targetC] = {
+                                content: (x === 0 && y === 0) ? cell.content : "",
+                                colspan: cell.colspan,
+                                rowspan: cell.rowspan,
+                                isOrigin: (x === 0 && y === 0),
+                                originR: r,
+                                originC: cIndex
+                            };
+                        }
+                    }
+                    cIndex += cell.colspan;
+                }
+            }
+
+            // 2. 선택 영역 내의 '병합된 셀'을 찾아 분할 (1x1로 초기화)
+            const rStart = Math.min(selection.start.r, selection.end.r);
+            const rEnd = Math.max(selection.start.r, selection.end.r);
+            const cStart = Math.min(selection.start.c, selection.end.c);
+            const cEnd = Math.max(selection.start.c, selection.end.c);
+
+            let hasChanged = false;
+            for (let r = rStart; r <= rEnd; r++) {
+                for (let c = cStart; c <= cEnd; c++) {
+                    if (denseGrid[r] && denseGrid[r][c]) {
+                        const cell = denseGrid[r][c];
+                        // 병합된 셀의 원본(isOrigin)인 경우만 처리
+                        if (cell.isOrigin && (cell.colspan > 1 || cell.rowspan > 1)) {
+                            // 범위 체크: 셀 전체가 선택 영역에 포함되는지 확인 (선택적)
+                            // 여기서는 단순히 선택된 영역에 걸친 병합셀을 모두 쪼갭니다.
+
+                            // 분할 로직: 해당 셀이 차지하던 영역을 모두 개별 1x1 셀로 변경
+                            for (let y = 0; y < cell.rowspan; y++) {
+                                for (let x = 0; x < cell.colspan; x++) {
+                                    const tr = r + y;
+                                    const tc = c + x;
+                                    if (denseGrid[tr] && denseGrid[tr][tc]) {
+                                        denseGrid[tr][tc] = {
+                                            content: (x === 0 && y === 0) ? cell.content : "", // 내용은 첫 셀에만 유지하고 나머지는 빈값
+                                            colspan: 1,
+                                            rowspan: 1,
+                                            isOrigin: true,
+                                            originR: tr,
+                                            originC: tc
+                                        };
+                                    }
+                                }
+                            }
+                            hasChanged = true;
+                        }
+                    }
+                }
+            }
+
+            if (!hasChanged) return;
+
+            // 3. Dense Array를 다시 SevenMark Table Grid 포맷으로 변환
+            let newGrid = [];
+            for (let r = 0; r < denseGrid.length; r++) {
+                let newRow = [];
+                if (!denseGrid[r]) continue;
+
+                for (let c = 0; c < denseGrid[r].length; c++) {
+                    const cell = denseGrid[r][c];
+                    if (!cell) continue;
+
+                    // 원본 시작점인 경우에만 추가 (나머지는 다른 셀의 colspan/rowspan에 의해 커버됨)
+                    // 분할된 셀들은 모두 1x1, isOrigin=true가 되었으므로 모두 추가됨
+                    if (cell.isOrigin) {
+                        // 만약 이 셀이 위쪽 행의 rowspan에 의해 덮여야 하는 위치라면?
+                        // 이미 위에서 분할 처리했으므로 denseGrid 상태가 정답임.
+                        // 다만 재구성 시 '덮이는' 셀은 건너뛰어야 함.
+                        // denseGrid 로직상 isOrigin이 true면 덮이는 셀이 아님.
+                        newRow.push({
+                            content: cell.content,
+                            colspan: cell.colspan,
+                            rowspan: cell.rowspan
+                        });
+                    }
+                }
+                if (newRow.length > 0) newGrid.push(newRow);
+            }
+
+            currentGrid = newGrid;
+            saveHistory();
+            renderTable();
+        });
+
+        deselectBtn.addEventListener("click", () => {
             selection.start = null;
             selection.end = null;
+
             updateSelectionUI();
         });
 
