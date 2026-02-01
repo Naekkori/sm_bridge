@@ -109,7 +109,7 @@ var cm_css = `
     --sm-color-null: #bdc3c7;
     --sm-color-control: #d63031;
     --sm-border-styled: #fab1a0;
-    --sm-color-literal: #2d3436;
+    --sm-color-literal: #3a484d;
     --sm-bg-literal: #dfe6e9;
     --sm-color-fold: #6c5ce7;
     --sm-color-ruby: #e84393;
@@ -165,7 +165,7 @@ body.dark {
     --sm-color-null: #6a737d;
     --sm-color-control: #f48771;
     --sm-border-styled: #f48771;
-    --sm-color-literal: #ce9178;
+    --sm-color-literal: #9fcfe0ff;
     --sm-bg-literal: #3c3c3c;
     --sm-color-fold: #b392f0;
     --sm-color-ruby: #c586c0;
@@ -220,7 +220,7 @@ body.dark {
 .cm-sm-Null { color: var(--sm-color-null); text-decoration: line-through; }
 .cm-sm-If, .cm-sm-Define { color: var(--sm-color-control); font-weight: bold; }
 .cm-sm-Styled { border: 1px solid var(--sm-border-styled); border-radius: 4px; padding: 0 2px; }
-.cm-sm-Literal { color: var(--sm-color-literal); }
+.cm-sm-Literal { color: var(--sm-color-literal); font-family: monospace; font-weight: bold; padding: 0 2px; }
 .cm-sm-Fold { color: var(--sm-color-fold); font-weight: bold; }
 .cm-sm-Ruby { color: var(--sm-color-ruby); border-bottom: 1px dotted var(--sm-color-ruby); }
 .cm-sm-Table { border: 1px solid var(--sm-border-table); }
@@ -1157,6 +1157,14 @@ function setup_toolbar(CM) {
             text: "code",
             title: "코드",
             onClick: () => toggleSyntax("{{{#code #lang=\"javascript\"\n", "\n}}}", "Code")
+        },
+        {
+            id: "sm-toolbar-literal",
+            astType: "Literal",
+            className: "sm_toolbar_btn",
+            text: "data_object",
+            title: "리터럴 (세븐마크 문법 처리안함)",
+            onClick: () => toggleSyntax("{{{\n", "\n}}}", "Literal")
         },
         {
             id: "sm-toolbar-folder",
