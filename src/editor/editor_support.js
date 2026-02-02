@@ -874,9 +874,8 @@ export async function init_codemirror(parent, initialDoc = "") {
     const loadingText = document.createElement("span");
     loadingText.style.color = "var(--sm-color-text)";
     loadingText.textContent = "Loading...";
-
+    loader.appendChild(loadingText);
     parent.appendChild(loader);
-    parent.appendChild(loadingText);
 
     const CM = await ensure_codemirror();
     const { EditorView, EditorState, basicSetup, keymap, undoDepth, redoDepth, indentWithTab } = CM;
