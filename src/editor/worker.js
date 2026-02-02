@@ -1,4 +1,4 @@
-import init, { excel_get_worksheets, excel_open_book, open_csv } from '../../../../sm_bridge.js';
+import init, { excel_get_worksheets, excel_open_book, open_csv, } from '../../../../sm_bridge.js';
 
 export function worker_dummy() { }
 
@@ -25,6 +25,9 @@ self.onmessage = async (e) => {
             case 'OPEN_CSV':
                 result = open_csv(payload.data);
                 break;
+            case 'SM_ENGINE':
+            //TODO: 세븐마크 엔진 워커지원 추가 (대용량 문서 처리시 브라우저 멈춤 방지)
+            //TODO: 함수명: sm_renderer()
             default:
                 throw new Error(`Unknown command: ${type}`);
         }

@@ -378,10 +378,19 @@ const SM_RENDER_CSS = `
     .sm-h6 { font-size: 0.9em; font-weight: bold; margin: 2.33em 0; }
 
     /* 테이블 */
+    /* 테이블 래퍼 (스크롤 지원) */
+    .sm-table-wrapper {
+        width: 100%;
+        overflow-x: auto;
+        margin: 15px 0;
+        border: 1px solid transparent; 
+    }
     .sm-table {
         border-collapse: collapse;
-        width: 100%;
-        margin: 15px 0;
+        width: max-content !important; /* 내용물만큼 늘어나게 함 */
+        min-width: 100%;
+        margin: 0;
+        table-layout: fixed; /* 렌더링 성능 최적화 */
     }
     .sm-table th, .sm-table td {
         border: 1px solid #ddd;
@@ -891,6 +900,7 @@ export async function init_codemirror(parent, initialDoc = "") {
 
             if (update.docChanged) {
                 preview.innerHTML = html;
+                wrapTables(preview);
             }
 
             // 프리뷰 하이라이트 동기화
@@ -1057,23 +1067,35 @@ function setup_sep_handle_line() {
     });
 }
 
+let resizeRafId = null;
+let lastClientX = 0;
+
 function handleResize(e) {
-    const editor = document.getElementById("sm-editor-raw");
-    const preview = document.getElementById("sm-editor-preview");
-    if (!editor || !preview) return;
+    lastClientX = e.clientX;
+    if (resizeRafId) return;
 
-    const container = editor.parentElement;
-    const containerRect = container.getBoundingClientRect();
+    resizeRafId = requestAnimationFrame(() => {
+        const editor = document.getElementById("sm-editor-raw");
+        const preview = document.getElementById("sm-editor-preview");
+        if (!editor || !preview) {
+            resizeRafId = null;
+            return;
+        }
 
-    let newWidth = e.clientX - containerRect.left;
+        const container = editor.parentElement;
+        const containerRect = container.getBoundingClientRect();
 
-    const minWidth = 368;
-    const maxWidth = containerRect.width - 368;
+        let newWidth = lastClientX - containerRect.left;
 
-    if (newWidth < minWidth) newWidth = minWidth;
-    if (newWidth > maxWidth) newWidth = maxWidth;
+        const minWidth = 368;
+        const maxWidth = containerRect.width - 368;
 
-    editor.style.flex = `0 0 ${newWidth}px`;
+        if (newWidth < minWidth) newWidth = minWidth;
+        if (newWidth > maxWidth) newWidth = maxWidth;
+
+        editor.style.flex = `0 0 ${newWidth}px`;
+        resizeRafId = null;
+    });
 }
 function smoothScroll() {
     const preview = document.getElementById("sm-editor-preview");
@@ -1614,6 +1636,17 @@ function setup_toolbar(CM) {
         btn.title = button.title;
         btn.addEventListener("click", button.onClick);
         rightToolbar.appendChild(btn);
+    });
+}
+
+function wrapTables(container) {
+    if (!container) return;
+    container.querySelectorAll('.sm-table').forEach(table => {
+        if (table.parentElement.classList.contains('sm-table-wrapper')) return;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'sm-table-wrapper';
+        table.parentNode.insertBefore(wrapper, table);
+        wrapper.appendChild(table);
     });
 }
 
