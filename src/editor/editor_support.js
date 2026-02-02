@@ -1364,7 +1364,7 @@ function setup_toolbar(CM) {
             className: "sm_toolbar_btn",
             text: "folder",
             title: "폴드(접을수 있는 영역)",
-            onClick: () => toggleSyntax("{{{#fold\n[[여기에 요약 텍스트 입력]]\n[[", "]]\n}}}", "Fold")
+            onClick: () => toggleSyntax("{{{#fold\n[[여기에 요약 텍스트 입력]]\n[[", "]]\n}}}", "Fold", "여기에 내용을 작성하세요.")
         },
         {
             id: "sm-toolbar-list",
