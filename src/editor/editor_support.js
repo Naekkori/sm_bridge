@@ -1425,8 +1425,8 @@ function setup_toolbar(CM) {
             title: "루비 문자",
             onClick: () => {
                 const cminst = window.cm_instances[window.cm_instances.length - 1];
-                const { from, to } = cminst.state.main;
-                const selection = cminst.sliceDoc(from, to);
+                const { from, to } = cminst.state.selection.main;
+                const selection = cminst.state.sliceDoc(from, to);
                 toggleSyntax(`{{{#ruby #ruby="${selection.length === 0 ? "ねこ" : "원하는 내용을 넣으십시오"}"`, " }}}", "Ruby", "猫")
             }
         },
