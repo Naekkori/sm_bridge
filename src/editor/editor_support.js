@@ -29,6 +29,7 @@ function runWorker(type, payload) {
         worker.postMessage({ id, type, payload });
     });
 }
+
 async function loadExcelSheet(uint8Arr) {
     return await runWorker("GET_SHEETS", { data: uint8Arr });
 }
@@ -40,6 +41,7 @@ async function loadExcelData(uint8Arr, sheetName) {
 async function loadCsvData(uint8Arr) {
     return await runWorker("OPEN_CSV", { data: uint8Arr });
 }
+
 // 전역 변수로 저장될 CodeMirror 모듈들
 let CM = null;
 
@@ -75,7 +77,9 @@ async function ensure_codemirror() {
 function create_sm_highlight_field(CM) {
     const { StateField, Decoration, EditorView } = CM;
     return StateField.define({
-        create() { return Decoration.none },
+        create() {
+            return Decoration.none
+        },
         update(decorations, tr) {
             if (!tr.docChanged && decorations.size > 0) return decorations;
 
@@ -759,12 +763,42 @@ const cm_styles = `
 `;
 // 테마 설정 구성 (새로운 요소 추가 시 여기에만 한 줄 추가하면 됨)
 const THEME_CONFIG = [
-    { var: "--sm-color-header", key: "sm-editor-custom-main", default: "#3392FF", label: "main", inputId: "#sm-editor-main-color" },
-    { var: "--sm-color-text", key: "sm-editor-custom-text", default: "#333333", label: "text", inputId: "#sm-editor-text-color" },
-    { var: "--sm-bg-editor", key: "sm-editor-custom-bg", default: "#ffffff", label: "bg", inputId: "#sm-editor-bg-color" },
+    {
+        var: "--sm-color-header",
+        key: "sm-editor-custom-main",
+        default: "#3392FF",
+        label: "main",
+        inputId: "#sm-editor-main-color"
+    },
+    {
+        var: "--sm-color-text",
+        key: "sm-editor-custom-text",
+        default: "#333333",
+        label: "text",
+        inputId: "#sm-editor-text-color"
+    },
+    {
+        var: "--sm-bg-editor",
+        key: "sm-editor-custom-bg",
+        default: "#ffffff",
+        label: "bg",
+        inputId: "#sm-editor-bg-color"
+    },
     { var: "--sm-bg-toolbar", key: "sm-editor-custom-bg", default: "#ffffff", label: "bg" }, // 배경색 연동
-    { var: "--sm-btn-text", key: "sm-editor-custom-btn", default: "#333333", label: "btn", inputId: "#sm-editor-btn-color" },
-    { var: "--sm-color-text-secondary", key: "sm-editor-custom-text-secondary", default: "#ffffff", label: "text-secondary", inputId: "#sm-editor-text-secondary-color" }
+    {
+        var: "--sm-btn-text",
+        key: "sm-editor-custom-btn",
+        default: "#333333",
+        label: "btn",
+        inputId: "#sm-editor-btn-color"
+    },
+    {
+        var: "--sm-color-text-secondary",
+        key: "sm-editor-custom-text-secondary",
+        default: "#ffffff",
+        label: "text-secondary",
+        inputId: "#sm-editor-text-secondary-color"
+    }
 ];
 
 // 테마 전환 헬퍼 함수
@@ -807,6 +841,7 @@ var isRunning = false;
 var scrollSource = null; // 'editor' | 'preview'
 var lastSetTop = { editor: -1, preview: -1 };
 const lerpFactor = 0.2;
+
 export async function init_codemirror(parent, initialDoc = "") {
     const CM = await ensure_codemirror();
     const { EditorView, EditorState, basicSetup, keymap, undoDepth, redoDepth, indentWithTab } = CM;
@@ -1045,6 +1080,7 @@ export async function init_codemirror(parent, initialDoc = "") {
     setup_sep_handle_line();
     return view;
 }
+
 function setup_sep_handle_line() {
     const sep_handle_line = document.getElementById("sm-editor-sep-handle-line");
     if (!sep_handle_line) return;
@@ -1097,6 +1133,7 @@ function handleResize(e) {
         resizeRafId = null;
     });
 }
+
 function smoothScroll() {
     const preview = document.getElementById("sm-editor-preview");
     const scroller = (window.cm_instances && window.cm_instances.length > 0)
@@ -1125,6 +1162,7 @@ function smoothScroll() {
     targetEl.scrollTop = currentScroll;
     requestAnimationFrame(smoothScroll);
 }
+
 export function get_editor_text() {
     if (window.cm_instances && window.cm_instances.length > 0) {
         return window.cm_instances[window.cm_instances.length - 1].state.doc.toString();
@@ -1157,13 +1195,69 @@ function setup_toolbar(CM) {
     parent.prepend(toolbar);
 
     const Buttons = [
-        { id: "sm-toolbar-bold", astType: "Bold", className: "sm_toolbar_btn", text: "format_bold", title: "굵게", onClick: () => toggleSyntax("**", "**", "Bold") },
-        { id: "sm-toolbar-italic", astType: "Italic", className: "sm_toolbar_btn", text: "format_italic", title: "이탤릭체", onClick: () => toggleSyntax("*", "*", "Italic") },
-        { id: "sm-toolbar-underline", astType: "Underline", className: "sm_toolbar_btn", text: "format_underlined", title: "밑줄", onClick: () => toggleSyntax("__", "__", "Underline") },
-        { id: "sm-toolbar-strike", astType: "Strikethrough", className: "sm_toolbar_btn", text: "strikethrough_s", title: "취소선", onClick: () => toggleSyntax("~~", "~~", "Strikethrough") },
+        {
+            id: "sm-toolbar-color",
+            astType: "Color",
+            className: "sm_toolbar_btn",
+            html: `<input id="sm-toolbar-color-input" type="color" style="display:none"><span class="material-symbols-outlined">palette</span>`,
+            title: "글자색",
+            onClick: () => {
+                const ColorInput = document.getElementById("sm-toolbar-color-input");
+                ColorInput.onchange = (e) => {
+                    toggleSyntax(`{{{#style="color:${e.target.value}" `, " }}}", "Color", "글자색");
+                };
+                ColorInput.click();
+            }
+        },
+        {
+            id: "sm-toolbar-bold",
+            astType: "Bold",
+            className: "sm_toolbar_btn",
+            text: "format_bold",
+            title: "굵게",
+            onClick: () => toggleSyntax("**", "**", "Bold")
+        },
+        {
+            id: "sm-toolbar-italic",
+            astType: "Italic",
+            className: "sm_toolbar_btn",
+            text: "format_italic",
+            title: "이탤릭체",
+            onClick: () => toggleSyntax("*", "*", "Italic")
+        },
+        {
+            id: "sm-toolbar-underline",
+            astType: "Underline",
+            className: "sm_toolbar_btn",
+            text: "format_underlined",
+            title: "밑줄",
+            onClick: () => toggleSyntax("__", "__", "Underline")
+        },
+        {
+            id: "sm-toolbar-strike",
+            astType: "Strikethrough",
+            className: "sm_toolbar_btn",
+            text: "strikethrough_s",
+            title: "취소선",
+            onClick: () => toggleSyntax("~~", "~~", "Strikethrough")
+        },
         { id: "sm-separator", className: "sm_toolbar_btn sm_toolbar_separator" },
-        { id: "sm-toolbar-superscript", astType: "Superscript", className: "sm_toolbar_btn", text: "superscript", title: "상위첨자", onClick: () => toggleSyntax("^^", "^^", "Superscript") },
-        { id: "sm-toolbar-subscript", astType: "Subscript", className: "sm_toolbar_btn", text: "subscript", title: "하위첨자", onClick: () => toggleSyntax(",,", ",,", "Subscript") },
+        {
+            id: "sm-toolbar-superscript",
+            astType: "Superscript",
+            className: "sm_toolbar_btn",
+            text: "superscript",
+            title: "상위첨자",
+            onClick: () => toggleSyntax("^^", "^^", "Superscript")
+        },
+        {
+            id: "sm-toolbar-subscript",
+            astType: "Subscript",
+            className: "sm_toolbar_btn",
+            text: "subscript",
+            title: "하위첨자",
+            onClick: () => toggleSyntax(",,", ",,", "Subscript")
+        },
         {
             id: "sm-toolbar-latex",
             astType: "TeX",
@@ -1185,12 +1279,42 @@ function setup_toolbar(CM) {
             title: "머릿말",
             type: "dropdown",
             options: [
-                { text: "제목 1 (가장 크게)", icon: "format_size", size: "1.5rem", onClick: () => toggleSyntax("# ", "", "Header") },
-                { text: "제목 2 (크게)", icon: "format_size", size: "1.4rem", onClick: () => toggleSyntax("## ", "", "Header") },
-                { text: "제목 3 (중간)", icon: "format_size", size: "1.3rem", onClick: () => toggleSyntax("### ", "", "Header") },
-                { text: "제목 4 (작게)", icon: "format_size", size: "1.2rem", onClick: () => toggleSyntax("#### ", "", "Header") },
-                { text: "제목 5 (더 작게)", icon: "format_size", size: "1.1rem", onClick: () => toggleSyntax("##### ", "", "Header") },
-                { text: "제목 6 (가장 작게)", icon: "format_size", size: "1.0rem", onClick: () => toggleSyntax("###### ", "", "Header") },
+                {
+                    text: "제목 1 (가장 크게)",
+                    icon: "format_size",
+                    size: "1.5rem",
+                    onClick: () => toggleSyntax("# ", "", "Header")
+                },
+                {
+                    text: "제목 2 (크게)",
+                    icon: "format_size",
+                    size: "1.4rem",
+                    onClick: () => toggleSyntax("## ", "", "Header")
+                },
+                {
+                    text: "제목 3 (중간)",
+                    icon: "format_size",
+                    size: "1.3rem",
+                    onClick: () => toggleSyntax("### ", "", "Header")
+                },
+                {
+                    text: "제목 4 (작게)",
+                    icon: "format_size",
+                    size: "1.2rem",
+                    onClick: () => toggleSyntax("#### ", "", "Header")
+                },
+                {
+                    text: "제목 5 (더 작게)",
+                    icon: "format_size",
+                    size: "1.1rem",
+                    onClick: () => toggleSyntax("##### ", "", "Header")
+                },
+                {
+                    text: "제목 6 (가장 작게)",
+                    icon: "format_size",
+                    size: "1.0rem",
+                    onClick: () => toggleSyntax("###### ", "", "Header")
+                },
             ]
         },
         {
@@ -1250,11 +1374,31 @@ function setup_toolbar(CM) {
             title: "리스트",
             type: "dropdown",
             options: [
-                { text: "번호 리스트", icon: "format_list_numbered", onClick: () => toggleSyntax("{{{#list #1\n[[항목 1]]\n[[항목 2]]\n[[항목 3]]\n", "}}}", "List") },
-                { text: "소문자 abc", icon: "format_list_bulleted", onClick: () => toggleSyntax("{{{#list #a\n[[항목 1]]\n[[항목 2]]\n[[항목 3]]\n", "}}}", "List") },
-                { text: "대문자 ABC", icon: "format_list_bulleted", onClick: () => toggleSyntax("{{{#list #A\n[[항목 1]]\n[[항목 2]]\n[[항목 3]]\n", "}}}", "List") },
-                { text: "로마숫자 (소문자)", icon: "format_list_bulleted", onClick: () => toggleSyntax("{{{#list #i\n[[항목 1]]\n[[항목 2]]\n[[항목 3]]\n", "}}}", "List") },
-                { text: "로마숫자 (대문자)", icon: "format_list_bulleted", onClick: () => toggleSyntax("{{{#list #I\n[[항목 1]]\n[[항목 2]]\n[[항목 3]]\n", "}}}", "List") },
+                {
+                    text: "번호 리스트",
+                    icon: "format_list_numbered",
+                    onClick: () => toggleSyntax("{{{#list #1\n[[항목 1]]\n[[항목 2]]\n[[항목 3]]\n", "}}}", "List")
+                },
+                {
+                    text: "소문자 abc",
+                    icon: "format_list_bulleted",
+                    onClick: () => toggleSyntax("{{{#list #a\n[[항목 1]]\n[[항목 2]]\n[[항목 3]]\n", "}}}", "List")
+                },
+                {
+                    text: "대문자 ABC",
+                    icon: "format_list_bulleted",
+                    onClick: () => toggleSyntax("{{{#list #A\n[[항목 1]]\n[[항목 2]]\n[[항목 3]]\n", "}}}", "List")
+                },
+                {
+                    text: "로마숫자 (소문자)",
+                    icon: "format_list_bulleted",
+                    onClick: () => toggleSyntax("{{{#list #i\n[[항목 1]]\n[[항목 2]]\n[[항목 3]]\n", "}}}", "List")
+                },
+                {
+                    text: "로마숫자 (대문자)",
+                    icon: "format_list_bulleted",
+                    onClick: () => toggleSyntax("{{{#list #I\n[[항목 1]]\n[[항목 2]]\n[[항목 3]]\n", "}}}", "List")
+                },
             ]
         },
         {
@@ -1279,7 +1423,12 @@ function setup_toolbar(CM) {
             className: "sm_toolbar_btn",
             html: "<ruby>猫<rt>ねこ</rt></ruby>",
             title: "루비 문자",
-            onClick: () => toggleSyntax("{{{#ruby ", " }}}", "Ruby")
+            onClick: () => {
+                const cminst = window.cm_instances[window.cm_instances.length - 1];
+                const { from, to } = cminst.state.main;
+                const selection = cminst.sliceDoc(from, to);
+                toggleSyntax(`{{{#ruby #ruby="${selection.length === 0 ? "ねこ" : "원하는 내용을 넣으십시오"}"`, " }}}", "Ruby", "猫")
+            }
         },
         {
             id: "sm-toolbar-footnote",
@@ -1369,13 +1518,19 @@ function setup_toolbar(CM) {
         {
             id: "sm-editor-undo", className: "sm_toolbar_btn", text: "undo", title: "되돌리기", onClick: () => {
                 const view = window.cm_instances[window.cm_instances.length - 1];
-                if (view) { undo(view); view.focus(); }
+                if (view) {
+                    undo(view);
+                    view.focus();
+                }
             }
         },
         {
             id: "sm-editor-redo", className: "sm_toolbar_btn", text: "redo", title: "다시하기", onClick: () => {
                 const view = window.cm_instances[window.cm_instances.length - 1];
-                if (view) { redo(view); view.focus(); }
+                if (view) {
+                    redo(view);
+                    view.focus();
+                }
             }
         },
         {
@@ -1383,7 +1538,10 @@ function setup_toolbar(CM) {
                 const view = window.cm_instances[window.cm_instances.length - 1];
                 if (view) {
                     if (view.dom.querySelector(".cm-search")) closeSearchPanel(view);
-                    else { openSearchPanel(view); setTimeout(() => view.dom.querySelector(".cm-search input")?.focus(), 10); }
+                    else {
+                        openSearchPanel(view);
+                        setTimeout(() => view.dom.querySelector(".cm-search input")?.focus(), 10);
+                    }
                     view.focus();
                 }
             }
@@ -1668,7 +1826,8 @@ function wrapSelection(before, after = before) {
     }
     view.focus();
 }
-function toggleSyntax(before, after, astType) {
+
+function toggleSyntax(before, after, astType, defaultContent = '') {
     const view = window.cm_instances[window.cm_instances.length - 1];
     if (!view) return;
     const { state } = view;
@@ -1688,11 +1847,17 @@ function toggleSyntax(before, after, astType) {
 
         view.dispatch({
             changes: { from: start, to: end, insert: content },
-            selection: { anchor: Math.max(start, from - before.length), head: Math.min(start + content.length, to - before.length) }
+            selection: {
+                anchor: Math.max(start, from - before.length),
+                head: Math.min(start + content.length, to - before.length)
+            }
         });
     } else {
         // 노드가 없음 -> Wrap (적용)
-        const selectedText = state.sliceDoc(from, to);
+        let selectedText = state.sliceDoc(from, to);
+        if (selectedText.length === 0) {
+            selectedText = defaultContent;
+        }
         view.dispatch({
             changes: { from, to, insert: `${before}${selectedText}${after}` },
             selection: { anchor: from + before.length + (from === to ? 0 : selectedText.length) }
@@ -1708,6 +1873,7 @@ export function get_cm_ast() {
     const raw = state.doc.toString();
     return JSON.parse(window.cm_highlighter(raw));
 }
+
 if (typeof window !== 'undefined') {
     window.get_cm_ast = get_cm_ast;
 }
@@ -1730,6 +1896,7 @@ function findNodeByType(nodes, from, to, targetType) {
     }
     return null;
 }
+
 function createModal(content, onMount, isClosingWarning = false) {
     const sm_ed_area = document.getElementById("sm-editor-raw");
     if (sm_ed_area.querySelector(".sm_modal")) {
@@ -1761,6 +1928,7 @@ function createModal(content, onMount, isClosingWarning = false) {
 
     return modal;
 }
+
 function findActiveType(nodes, from, to, activeSet = new Set()) {
     if (!nodes) return activeSet;
     for (const node of nodes) {
@@ -1788,9 +1956,11 @@ function setEditorFontSize(fontSize) {
     document.documentElement.style.setProperty("--sm-editor-font-size", `${fontSize}pt`);
     localStorage.setItem("sm-font-size", fontSize);
 }
+
 function getEditorFontSize() {
     return localStorage.getItem("sm-font-size") || "12";
 }
+
 function makingTableModal() {
     const modalContent = `
             <h3>테이블 생성</h3>
@@ -2209,8 +2379,7 @@ function makingTableModal() {
                             fileNameDisplay.innerHTML = "<span style='color: red;'>파일을 읽는 중 에러가 발생했습니다.</span>";
                         };
                         reader.readAsArrayBuffer(e.target.files[0]);
-                    }
-                    else {
+                    } else {
                         fileNameDisplay.innerHTML = "<span style='color: red;'>지원하지 않는 파일 형식입니다.</span>";
                     }
                 }
@@ -2218,6 +2387,7 @@ function makingTableModal() {
         }
     }, true);
 }
+
 function openTableEditorModal() {
     const view = window.cm_instances[window.cm_instances.length - 1];
     if (!view) return;
@@ -2633,7 +2803,9 @@ function openTableEditorModal() {
             syntaxPreview.textContent = out;
         };
 
-        const handleMouseUp = () => { selection.active = false; };
+        const handleMouseUp = () => {
+            selection.active = false;
+        };
         window.addEventListener("mouseup", handleMouseUp);
 
         mergeBtn.addEventListener("click", () => {
@@ -2819,6 +2991,7 @@ function openTableEditorModal() {
         renderTable();
     }, true);
 }
+
 if (typeof window !== 'undefined') {
     window.openTableEditorModal = openTableEditorModal;
     window.makingTableModal = makingTableModal;
