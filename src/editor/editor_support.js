@@ -7,7 +7,7 @@ if (isBrowser) {
 
 let worker = null;
 if (isBrowser) {
-    worker = new Worker(new URL('./worker.js', import.meta.url), { type: "module" });
+    worker = new Worker(new URL('./worker.js', import.meta.url), {type: "module"});
 }
 
 function runWorker(type, payload) {
@@ -26,20 +26,20 @@ function runWorker(type, payload) {
         };
 
         worker.addEventListener('message', handler);
-        worker.postMessage({ id, type, payload });
+        worker.postMessage({id, type, payload});
     });
 }
 
 async function loadExcelSheet(uint8Arr) {
-    return await runWorker("GET_SHEETS", { data: uint8Arr });
+    return await runWorker("GET_SHEETS", {data: uint8Arr});
 }
 
 async function loadExcelData(uint8Arr, sheetName) {
-    return await runWorker("OPEN_EXCEL", { data: uint8Arr, sheetName })
+    return await runWorker("OPEN_EXCEL", {data: uint8Arr, sheetName})
 }
 
 async function loadCsvData(uint8Arr) {
-    return await runWorker("OPEN_CSV", { data: uint8Arr });
+    return await runWorker("OPEN_CSV", {data: uint8Arr});
 }
 
 // 전역 변수로 저장될 CodeMirror 모듈들
@@ -50,11 +50,11 @@ async function ensure_codemirror() {
 
     // 동적 임포트로 모듈 로드 (WASM이 주입한 importmap을 참조함)
     const [
-        { EditorView, basicSetup },
-        { EditorState, StateField },
-        { Decoration, keymap },
-        { undoDepth, redoDepth, undo, redo, indentWithTab },
-        { openSearchPanel, closeSearchPanel }
+        {EditorView, basicSetup},
+        {EditorState, StateField},
+        {Decoration, keymap},
+        {undoDepth, redoDepth, undo, redo, indentWithTab},
+        {openSearchPanel, closeSearchPanel}
     ] = await Promise.all([
         import("codemirror"),
         import("@codemirror/state"),
@@ -75,7 +75,7 @@ async function ensure_codemirror() {
 
 // 하이라이팅 필드 생성 함수 (CM 로드 후 실행)
 function create_sm_highlight_field(CM) {
-    const { StateField, Decoration, EditorView } = CM;
+    const {StateField, Decoration, EditorView} = CM;
     return StateField.define({
         create() {
             return Decoration.none
@@ -98,7 +98,7 @@ function create_sm_highlight_field(CM) {
                     const data = el[type];
                     if (data && data.span) {
                         if (type !== "Text" && type !== "SoftBreak" && type !== "HardBreak") {
-                            marks.push(Decoration.mark({ class: `cm-sm-${type}` }).range(data.span.start, data.span.end));
+                            marks.push(Decoration.mark({class: `cm-sm-${type}`}).range(data.span.start, data.span.end));
                         }
                         if (data.children) collectMarks(data.children);
                         if (data.summary) collectMarks([data.summary]);
@@ -785,7 +785,7 @@ const THEME_CONFIG = [
         label: "bg",
         inputId: "#sm-editor-bg-color"
     },
-    { var: "--sm-bg-toolbar", key: "sm-editor-custom-bg", default: "#ffffff", label: "bg" }, // 배경색 연동
+    {var: "--sm-bg-toolbar", key: "sm-editor-custom-bg", default: "#ffffff", label: "bg"}, // 배경색 연동
     {
         var: "--sm-btn-text",
         key: "sm-editor-custom-btn",
@@ -840,7 +840,7 @@ var targetScroll = 0;
 var currentScroll = 0;
 var isRunning = false;
 var scrollSource = null; // 'editor' | 'preview'
-var lastSetTop = { editor: -1, preview: -1 };
+var lastSetTop = {editor: -1, preview: -1};
 const lerpFactor = 0.2;
 
 const LOADING_CSS = `
@@ -878,7 +878,7 @@ export async function init_codemirror(parent, initialDoc = "") {
     parent.appendChild(loader);
 
     const CM = await ensure_codemirror();
-    const { EditorView, EditorState, basicSetup, keymap, undoDepth, redoDepth, indentWithTab } = CM;
+    const {EditorView, EditorState, basicSetup, keymap, undoDepth, redoDepth, indentWithTab} = CM;
 
     const style = document.createElement("style");
     style.textContent = cm_css;
@@ -927,8 +927,8 @@ export async function init_codemirror(parent, initialDoc = "") {
     const fontSize = localStorage.getItem("sm-editor-font-size") || "12";
     document.documentElement.style.setProperty("--sm-editor-font-size", `${fontSize}pt`);
     const fixedHeightEditor = EditorView.theme({
-        "&": { height: "100%" },
-        "& .cm-scroller": { overflow: "auto", flex: "1" }
+        "&": {height: "100%"},
+        "& .cm-scroller": {overflow: "auto", flex: "1"}
     });
 
     const koPhrases = {
@@ -950,7 +950,7 @@ export async function init_codemirror(parent, initialDoc = "") {
 
             const ast = JSON.parse(highlighter(raw));
             const html = renderer(raw);
-            const { from, to } = update.state.selection.main;
+            const {from, to} = update.state.selection.main;
 
             const activeType = findActiveType(ast, from, to);
 
@@ -1092,7 +1092,7 @@ export async function init_codemirror(parent, initialDoc = "") {
             const pos = parseInt(target.getAttribute("data-start"));
             if (!isNaN(pos)) {
                 view.dispatch({
-                    selection: { anchor: pos, head: pos },
+                    selection: {anchor: pos, head: pos},
                     scrollIntoView: true
                 });
                 view.focus();
@@ -1214,7 +1214,7 @@ export function get_editor_text() {
 export function set_editor_text(text) {
     if (window.cm_instances && window.cm_instances.length > 0) {
         const view = window.cm_instances[window.cm_instances.length - 1];
-        view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: text } });
+        view.dispatch({changes: {from: 0, to: view.state.doc.length, insert: text}});
     }
 }
 
@@ -1225,7 +1225,7 @@ if (typeof window !== 'undefined') {
 }
 
 function setup_toolbar(CM) {
-    const { openSearchPanel, closeSearchPanel, undo, redo } = CM;
+    const {openSearchPanel, closeSearchPanel, undo, redo} = CM;
     const parent = document.getElementById("sm-editor-raw");
     if (!parent || document.getElementById("sm-toolbar")) return;
     parent.style.position = "relative"; // 모달을 위한 상대 좌표계 설정
@@ -1245,32 +1245,118 @@ function setup_toolbar(CM) {
             type: "paramList",
             popupTitle: "스타일 설정",
             params: [
-                { name: "color", label: "글자 색상", type: "color", default: "#000000" },
-                { name: "size", label: "글자 크기", type: "number", default: 16, min: 8, max: 72, suffix: "px" }
+                {name: "color", label: "글자 색상", type: "color", default: "#000000"},
+                {name: "size", label: "글자 크기", type: "number", default: 16, min: 8, max: 72, suffix: "px"},
+                {name: "bg_color", label: "배경 색상", type: "color", default: "rgba(0, 0, 0, 0)"}
             ],
-            onApply: (values) => {
-                const { color, size } = values;
-                const view = window.cm_instances?.[window.cm_instances.length - 1];
-                if (view) {
-                    const { state } = view;
-                    const { from, to } = state.selection.main;
-                    const selectedText = state.sliceDoc(from, to);
+            getInitialValues: (view) => {
+                const {state} = view;
+                const {from, to} = state.selection.main;
+                const raw = state.doc.toString();
 
-                    let tagAttrs = "";
-                    if (color) tagAttrs += ` #color="${color}"`;
-                    if (size) tagAttrs += ` #size="${size}px"`;
+                // AST를 사용하여 현재 위치를 감싸는 가장 안쪽의 Styled 노드 찾기
+                const ast = JSON.parse(window.cm_highlighter(raw));
+                const targetNode = findNodeByType(ast, from, to, "Styled");
 
-                    const openTag = `{{{#style${tagAttrs}\n`;
-                    const closeTag = `\n}}}`;
+                if (!targetNode) return null;
 
-                    view.dispatch({
-                        changes: { from, to, insert: `${openTag}${selectedText}${closeTag}` },
-                        selection: { anchor: from + openTag.length + selectedText.length }
-                    });
-                    view.focus();
+                // 헤더 라인(첫 줄)만 추출하여 스타일 파싱
+                const tagContent = raw.slice(targetNode.span.start, targetNode.span.end);
+                const headerLine = tagContent.split('\n')[0];
+                
+                const result = {};
+                const styleMatch = headerLine.match(/style="([^"]*)"/);
+                if (styleMatch) {
+                    const styleStr = styleMatch[1];
+
+                    const colorMatch = styleStr.match(/color:\s*([^;"]+)/);
+                    if (colorMatch) result.color = colorMatch[1].trim();
+
+                    const sizeMatch = styleStr.match(/font-size:\s*(\d+)px/);
+                    if (sizeMatch) result.size = parseInt(sizeMatch[1]);
+
+                    const bgMatch = styleStr.match(/background-color:\s*([^;"]+)/);
+                    if (bgMatch) result.bg_color = bgMatch[1].trim();
                 }
-            }
-        },
+
+                return Object.keys(result).length > 0 ? result : null;
+            },
+                        onApply: (values) => {
+                            const {color, size, bg_color} = values;
+                            const view = window.cm_instances?.[window.cm_instances.length - 1];
+                            if (view) {
+                                const {state} = view;
+                                const {from, to} = state.selection.main;
+                                const text = state.doc.toString();
+                                const selectedText = state.sliceDoc(from, to);
+            
+                                // AST를 사용하여 현재 위치를 감싸는 가장 안쪽의 Styled 노드 찾기
+                                const ast = JSON.parse(window.cm_highlighter(text));
+                                const targetNode = findNodeByType(ast, from, to, "Styled");
+            
+                                const buildAttrStr = (baseAttrs = {}) => {
+                                    const merged = {...baseAttrs};
+                                    if (color) merged.color = color;
+                                    if (size) merged.size = size;
+                                    if (bg_color) merged.bg_color = bg_color;
+            
+                                    let str = "";
+                                    if (merged.color) str += `color:${merged.color}; `;
+                                    if (merged.size) str += `font-size:${merged.size}px; `;
+                                    if (merged.bg_color) str += `background-color:${merged.bg_color}; `;
+                                    return str.trim();
+                                };
+            
+                                if (targetNode) {
+                                    // === 기존 태그 수정 ===
+                                    const start = targetNode.span.start;
+                                    const end = targetNode.span.end;
+                                    const fullTag = text.slice(start, end);
+                                    const headerEndRelative = fullTag.indexOf('\n');
+                                    const headerEnd = headerEndRelative !== -1 ? start + headerEndRelative : end;
+            
+                                    const headerContent = text.slice(start, headerEnd);
+                                    const styleMatch = headerContent.match(/style="([^"]*)"/);
+            
+                                    const currentAttrs = {};
+                                    if (styleMatch) {
+                                        const styleStr = styleMatch[1];
+                                        const cMatch = styleStr.match(/color:\s*([^;"]+)/);
+                                        if (cMatch) currentAttrs.color = cMatch[1].trim();
+                                        const sMatch = styleStr.match(/font-size:\s*(\d+)px/);
+                                        if (sMatch) currentAttrs.size = parseInt(sMatch[1]);
+                                        const bMatch = styleStr.match(/background-color:\s*([^;"]+)/);
+                                        if (bMatch) currentAttrs.bg_color = bMatch[1].trim();
+                                    }
+            
+                                    const newAttrStr = buildAttrStr(currentAttrs);
+                                    const newHeader = `{{{#style="${newAttrStr}"`;
+            
+                                    // 원래 헤더의 {{{#style="..." 부분까지만 교체 범위로 설정
+                                    const headerMatch = headerContent.match(/\{\{\{#style="[^"]*"/);
+                                    let replaceTo = start + (headerMatch ? headerMatch[0].length : 9); // 9는 {{{#style 길이
+            
+                                    view.dispatch({
+                                        changes: {
+                                            from: start,
+                                            to: replaceTo,
+                                            insert: newHeader
+                                        }
+                                    });
+            
+                                } else {
+                                    // === 신규 태그 생성 ===
+                                    const newAttrStr = buildAttrStr({});
+                                    const openTag = `{{{#style="${newAttrStr}"\n`;
+                                    const closeTag = `\n}}}`;
+                                    view.dispatch({
+                                        changes: {from, to, insert: `${openTag}${selectedText}${closeTag}`},
+                                        selection: {anchor: from + openTag.length + (from === to ? 0 : selectedText.length)}
+                                    });
+                                }
+                                view.focus();
+                            }
+                        }        },
         {
             id: "sm-toolbar-bold",
             astType: "Bold",
@@ -1303,7 +1389,7 @@ function setup_toolbar(CM) {
             title: "취소선",
             onClick: () => toggleSyntax("~~", "~~", "Strikethrough")
         },
-        { id: "sm-separator", className: "sm_toolbar_btn sm_toolbar_separator" },
+        {id: "sm-separator", className: "sm_toolbar_btn sm_toolbar_separator"},
         {
             id: "sm-toolbar-superscript",
             astType: "Superscript",
@@ -1328,11 +1414,11 @@ function setup_toolbar(CM) {
             title: "수식",
             type: "dropdown",
             options: [
-                { text: "인라인 수식", icon: "functions", onClick: () => toggleSyntax("{{{#tex", "}}}", "TeX") },
-                { text: "블록 수식", icon: "functions", onClick: () => toggleSyntax("{{{#tex #block\n", "\n}}}", "TeX") },
+                {text: "인라인 수식", icon: "functions", onClick: () => toggleSyntax("{{{#tex", "}}}", "TeX")},
+                {text: "블록 수식", icon: "functions", onClick: () => toggleSyntax("{{{#tex #block\n", "\n}}}", "TeX")},
             ]
         },
-        { id: "sm-separator", className: "sm_toolbar_btn sm_toolbar_separator" },
+        {id: "sm-separator", className: "sm_toolbar_btn sm_toolbar_separator"},
         {
             id: "sm-toolbar-headings",
             astType: "Header",
@@ -1387,13 +1473,13 @@ function setup_toolbar(CM) {
             title: "가로선",
             type: "dropdown",
             options: [
-                { text: "가로선 3개", icon: "horizontal_rule", onClick: () => wrapSelection("---", "") },
-                { text: "가로선 4개", icon: "horizontal_rule", onClick: () => wrapSelection("----", "") },
-                { text: "가로선 5개", icon: "horizontal_rule", onClick: () => wrapSelection("-----", "") },
-                { text: "가로선 6개", icon: "horizontal_rule", onClick: () => wrapSelection("------", "") },
-                { text: "가로선 7개", icon: "horizontal_rule", onClick: () => wrapSelection("-------", "") },
-                { text: "가로선 8개", icon: "horizontal_rule", onClick: () => wrapSelection("--------", "") },
-                { text: "가로선 9개", icon: "horizontal_rule", onClick: () => wrapSelection("---------", "") },
+                {text: "가로선 3개", icon: "horizontal_rule", onClick: () => wrapSelection("---", "")},
+                {text: "가로선 4개", icon: "horizontal_rule", onClick: () => wrapSelection("----", "")},
+                {text: "가로선 5개", icon: "horizontal_rule", onClick: () => wrapSelection("-----", "")},
+                {text: "가로선 6개", icon: "horizontal_rule", onClick: () => wrapSelection("------", "")},
+                {text: "가로선 7개", icon: "horizontal_rule", onClick: () => wrapSelection("-------", "")},
+                {text: "가로선 8개", icon: "horizontal_rule", onClick: () => wrapSelection("--------", "")},
+                {text: "가로선 9개", icon: "horizontal_rule", onClick: () => wrapSelection("---------", "")},
             ]
         },
         {
@@ -1475,8 +1561,8 @@ function setup_toolbar(CM) {
             title: "테이블",
             type: "dropdown",
             options: [
-                { text: "테이블 생성", icon: "add", onClick: () => makingTableModal() },
-                { text: "테이블 편집", icon: "table_edit", onClick: () => openTableEditorModal() }
+                {text: "테이블 생성", icon: "add", onClick: () => makingTableModal()},
+                {text: "테이블 편집", icon: "table_edit", onClick: () => openTableEditorModal()}
             ]
         },
         {
@@ -1487,7 +1573,7 @@ function setup_toolbar(CM) {
             title: "루비 문자",
             onClick: () => {
                 const cminst = window.cm_instances[window.cm_instances.length - 1];
-                const { from, to } = cminst.state.selection.main;
+                const {from, to} = cminst.state.selection.main;
                 const selection = cminst.state.sliceDoc(from, to);
                 toggleSyntax(`{{{#ruby #ruby="${selection.length === 0 ? "ねこ" : "원하는 내용을 넣으십시오"}"`, " }}}", "Ruby", "猫")
             }
@@ -1633,10 +1719,37 @@ function setup_toolbar(CM) {
 
                 let input;
                 if (param.type === 'color') {
+                    // 실제 값을 담을 input (외부에서는 이 값을 참조함)
                     input = document.createElement("input");
-                    input.type = "color";
+                    input.type = "hidden";
                     input.value = param.default || "#000000";
-                    Object.assign(input.style, {
+
+                    // 초기값 파싱 (rgba 또는 hex)
+                    let initialHex = "#000000";
+                    let initialAlpha = 1;
+                    const defVal = input.value;
+
+                    if (defVal.startsWith("rgba")) {
+                        const parts = defVal.match(/[\d.]+/g);
+                        if (parts && parts.length >= 3) {
+                            const r = parseInt(parts[0]).toString(16).padStart(2, '0');
+                            const g = parseInt(parts[1]).toString(16).padStart(2, '0');
+                            const b = parseInt(parts[2]).toString(16).padStart(2, '0');
+                            initialHex = `#${r}${g}${b}`;
+                            if (parts.length >= 4) initialAlpha = parseFloat(parts[3]);
+                        }
+                    } else if (defVal.startsWith("#")) {
+                        initialHex = defVal;
+                        if (initialHex.length === 4) { // #RGB -> #RRGGBB
+                            initialHex = "#" + initialHex[1] + initialHex[1] + initialHex[2] + initialHex[2] + initialHex[3] + initialHex[3];
+                        }
+                    }
+
+                    // UI: 색상 선택기
+                    const colorInput = document.createElement("input");
+                    colorInput.type = "color";
+                    colorInput.value = initialHex;
+                    Object.assign(colorInput.style, {
                         border: "none",
                         padding: "0",
                         background: "none",
@@ -1645,18 +1758,60 @@ function setup_toolbar(CM) {
                         height: "24px"
                     });
 
-                    const valDisplay = document.createElement("span");
-                    valDisplay.textContent = input.value;
-                    Object.assign(valDisplay.style, {
-                        fontSize: "0.8em",
-                        color: "#666",
-                        width: "55px",
-                        textAlign: "right"
+                    // UI: 투명도 슬라이더
+                    const alphaInput = document.createElement("input");
+                    alphaInput.type = "range";
+                    alphaInput.min = "0";
+                    alphaInput.max = "1";
+                    alphaInput.step = "0.01";
+                    alphaInput.value = initialAlpha;
+                    Object.assign(alphaInput.style, {
+                        width: "60px",
+                        cursor: "pointer"
                     });
 
-                    input.addEventListener("input", () => valDisplay.textContent = input.value);
-                    inputWrapper.appendChild(input);
+                    // UI: 값 표시
+                    const valDisplay = document.createElement("span");
+                    valDisplay.textContent = initialAlpha === 1 ? initialHex : `rgba(..., ${initialAlpha})`;
+                    Object.assign(valDisplay.style, {
+                        fontSize: "0.75em",
+                        color: "#666",
+                        width: "65px",
+                        textAlign: "right",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap"
+                    });
+
+                    // 값 업데이트 함수
+                    const updateValue = () => {
+                        const hex = colorInput.value;
+                        const r = parseInt(hex.slice(1, 3), 16);
+                        const g = parseInt(hex.slice(3, 5), 16);
+                        const b = parseInt(hex.slice(5, 7), 16);
+                        const a = alphaInput.value;
+
+                        // alpha가 1이면 hex로, 아니면 rgba로 저장 (선택 사항이나 깔끔함을 위해)
+                        // 여기서는 항상 통일성을 위해 rgba 권장하거나, 
+                        // 기존 로직과 호환성을 위해 1일땐 hex를 쓸 수도 있음.
+                        // 일단 요청하신 rgba 반환을 위해 rgba 포맷 사용.
+                        // 다만, hex만 지원하던 기존 로직과 충돌 방지를 위해 alpha가 1이면 hex로 할 수도 있음.
+                        // 여기서는 무조건 rgba로 변환하여 반환
+                        const rgbaVal = `rgba(${r}, ${g}, ${b}, ${a})`;
+                        input.value = rgbaVal;
+
+                        valDisplay.textContent = (a == 1) ? hex : `${a}`;
+                    };
+                    // 초기 한번 실행하여 input.value 포맷 통일 (선택)
+                    // updateValue(); 
+
+                    colorInput.addEventListener("input", updateValue);
+                    alphaInput.addEventListener("input", updateValue);
+
+                    inputWrapper.appendChild(colorInput);
+                    inputWrapper.appendChild(alphaInput);
                     inputWrapper.appendChild(valDisplay);
+
                 } else if (param.type === 'number') {
                     input = document.createElement("input");
                     input.type = "number";
@@ -1706,7 +1861,7 @@ function setup_toolbar(CM) {
             width: "100%",
             border: "none",
             background: "var(--sm-color-header, #3392FF)",
-            color: "#fff",
+            color: "var(--sm-color-text, #fff)",
             padding: "8px",
             borderRadius: "4px",
             cursor: "pointer",
@@ -1741,6 +1896,30 @@ function setup_toolbar(CM) {
 
             if (!isOpen) {
                 container.classList.add("show");
+            }
+
+            const view = window.cm_instances?.[window.cm_instances.length - 1];
+
+            let dynDefaults = {};
+            if (config.getInitialValues && view) {
+                dynDefaults = config.getInitialValues(view) || {};
+            }
+
+            // 동적으로 계산된 기본값을 입력 필드에 반영
+            if (config.params) {
+                config.params.forEach(param => {
+                    const input = inputs[param.name];
+                    if (input) {
+                        // 동적 기본값이 있으면 사용, 없으면 원래 기본값 사용
+                        const newVal = dynDefaults.hasOwnProperty(param.name) ? dynDefaults[param.name] : (param.default || "");
+                        input.value = newVal;
+
+                        // 컬러 타입인 경우 옆의 텍스트 라벨도 갱신
+                        if (param.type === 'color' && input.nextElementSibling) {
+                            input.nextElementSibling.textContent = newVal;
+                        }
+                    }
+                });
             }
         });
 
@@ -1957,7 +2136,7 @@ function setup_toolbar(CM) {
                             themeData[item.label] = document.body.style.getPropertyValue(item.var).trim() || item.default;
                         });
 
-                        const blob = new Blob([JSON.stringify(themeData, null, 2)], { type: "application/json" });
+                        const blob = new Blob([JSON.stringify(themeData, null, 2)], {type: "application/json"});
                         const url = URL.createObjectURL(blob);
                         const a = document.createElement("a");
                         a.href = url;
@@ -2058,8 +2237,8 @@ function wrapTables(container) {
 function wrapSelection(before, after = before) {
     const view = window.cm_instances[window.cm_instances.length - 1];
     if (!view) return;
-    const { state } = view;
-    const { from, to } = state.selection.main;
+    const {state} = view;
+    const {from, to} = state.selection.main;
     const selectedText = state.sliceDoc(from, to);
     const isWrap = selectedText.startsWith(before) && selectedText.endsWith(after);
 
@@ -2067,8 +2246,8 @@ function wrapSelection(before, after = before) {
         view.dispatch(state.replaceSelection(selectedText.slice(before.length, -after.length)));
     } else {
         view.dispatch({
-            changes: { from, to, insert: `${before}${selectedText}${after}` },
-            selection: { anchor: from + before.length + (from === to ? 0 : selectedText.length) }
+            changes: {from, to, insert: `${before}${selectedText}${after}`},
+            selection: {anchor: from + before.length + (from === to ? 0 : selectedText.length)}
         });
     }
     view.focus();
@@ -2077,8 +2256,8 @@ function wrapSelection(before, after = before) {
 function toggleSyntax(before, after, astType, defaultContent = '') {
     const view = window.cm_instances[window.cm_instances.length - 1];
     if (!view) return;
-    const { state } = view;
-    const { from, to } = state.selection.main;
+    const {state} = view;
+    const {from, to} = state.selection.main;
     const raw = state.doc.toString();
     const ast = JSON.parse(window.cm_highlighter(raw));
 
@@ -2093,7 +2272,7 @@ function toggleSyntax(before, after, astType, defaultContent = '') {
         const content = raw.slice(start + before.length, end - after.length);
 
         view.dispatch({
-            changes: { from: start, to: end, insert: content },
+            changes: {from: start, to: end, insert: content},
             selection: {
                 anchor: Math.max(start, from - before.length),
                 head: Math.min(start + content.length, to - before.length)
@@ -2106,8 +2285,8 @@ function toggleSyntax(before, after, astType, defaultContent = '') {
             selectedText = defaultContent;
         }
         view.dispatch({
-            changes: { from, to, insert: `${before}${selectedText}${after}` },
-            selection: { anchor: from + before.length + (from === to ? 0 : selectedText.length) }
+            changes: {from, to, insert: `${before}${selectedText}${after}`},
+            selection: {anchor: from + before.length + (from === to ? 0 : selectedText.length)}
         });
     }
     view.focus();
@@ -2116,7 +2295,7 @@ function toggleSyntax(before, after, astType, defaultContent = '') {
 export function get_cm_ast() {
     const view = window.cm_instances[window.cm_instances.length - 1];
     if (!view) return;
-    const { state } = view;
+    const {state} = view;
     const raw = state.doc.toString();
     return JSON.parse(window.cm_highlighter(raw));
 }
@@ -2133,11 +2312,11 @@ function findNodeByType(nodes, from, to, targetType) {
         if (data && data.span) {
             // 선택 영역이 노드 범위 안에 완전히 포함되는지 확인
             if (from >= data.span.start && to <= data.span.end) {
-                if (type === targetType) return data;
                 if (data.children) {
                     const found = findNodeByType(data.children, from, to, targetType);
                     if (found) return found;
                 }
+                if (type === targetType) return data;
             }
         }
     }
@@ -2222,7 +2401,7 @@ function makingTableModal() {
                     <div style="background: var(--sm-bg-editor); padding: 15px; border-radius: 8px; border: 1px solid var(--sm-border-editor); display: flex; flex-direction: column; align-items: center;">
                         <div class="sm_modal_label" style="margin-bottom: 10px; font-size: 0.85rem; white-space: nowrap;">그리드 드래그 선택</div>
                         <div id="table-grid-picker" class="sm_grid_picker" style="display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; width: 160px; height: 160px;">
-                            ${Array.from({ length: 100 }).map((_, i) => `<div class="sm_grid_cell" data-row="${Math.floor(i / 10)}" data-col="${i % 10}" style="width: 100%; height: 100%; background: var(--sm-border-editor); border-radius: 1px; cursor: pointer;"></div>`).join("")}
+                            ${Array.from({length: 100}).map((_, i) => `<div class="sm_grid_cell" data-row="${Math.floor(i / 10)}" data-col="${i % 10}" style="width: 100%; height: 100%; background: var(--sm-border-editor); border-radius: 1px; cursor: pointer;"></div>`).join("")}
                         </div>
                     </div>
                     <div style="display: flex; flex-direction: column; gap: 15px; padding-right: 10px;">
@@ -2394,10 +2573,10 @@ function makingTableModal() {
 
             const view = window.cm_instances[window.cm_instances.length - 1];
             if (view) {
-                const { from, to } = view.state.selection.main;
+                const {from, to} = view.state.selection.main;
                 view.dispatch({
-                    changes: { from, to, insert: tableText },
-                    selection: { anchor: from + tableText.length }
+                    changes: {from, to, insert: tableText},
+                    selection: {anchor: from + tableText.length}
                 });
                 view.focus();
             }
@@ -2601,10 +2780,10 @@ function makingTableModal() {
 
                                         const view = window.cm_instances[window.cm_instances.length - 1];
                                         if (view) {
-                                            const { from, to } = view.state.selection.main;
+                                            const {from, to} = view.state.selection.main;
                                             view.dispatch({
-                                                changes: { from, to, insert: tableText },
-                                                selection: { anchor: from + tableText.length }
+                                                changes: {from, to, insert: tableText},
+                                                selection: {anchor: from + tableText.length}
                                             });
                                             view.focus();
                                         }
@@ -2638,8 +2817,8 @@ function makingTableModal() {
 function openTableEditorModal() {
     const view = window.cm_instances[window.cm_instances.length - 1];
     if (!view) return;
-    const { state } = view;
-    const { from, to } = state.selection.main;
+    const {state} = view;
+    const {from, to} = state.selection.main;
     const raw = state.doc.toString();
     const ast = JSON.parse(window.cm_highlighter(raw));
 
@@ -2650,9 +2829,12 @@ function openTableEditorModal() {
             const data = node[type];
             if (data && data.span) {
                 if (from >= data.span.start && to <= data.span.end) {
-                    if (type === targetType) return { ...data, type };
-                    const found = findNodeByType(data.children, from, to, targetType);
-                    if (found) return found;
+                    // 자식 노드에서 먼저 찾음 (가장 안쪽 노드 우선)
+                    if (data.children) {
+                        const found = findNodeByType(data.children, from, to, targetType);
+                        if (found) return found;
+                    }
+                    if (type === targetType) return {...data, type};
                 }
             }
         }
@@ -2782,7 +2964,7 @@ function openTableEditorModal() {
                 break;
             }
 
-            gridRow.push({ content, colspan, rowspan });
+            gridRow.push({content, colspan, rowspan});
         });
         grid.push(gridRow);
     });
@@ -2827,7 +3009,7 @@ function openTableEditorModal() {
         const deselectBtn = modal.querySelector("#te-deselect-btn");
         const applyBtn = modal.querySelector("#te-apply-btn");
 
-        let selection = { start: null, end: null, active: false };
+        let selection = {start: null, end: null, active: false};
         let currentGrid = JSON.parse(JSON.stringify(grid));
 
         //히스토리 저장 Ctrl+Z Ctrl+Y
@@ -2973,14 +3155,14 @@ function openTableEditorModal() {
                     td.addEventListener("mousedown", () => {
                         if (editArea.contentEditable === "true") return; // 드래그불가 해결
                         selection.active = true;
-                        selection.start = { r, c: parseInt(td.dataset.c) };
-                        selection.end = { r, c: parseInt(td.dataset.c) };
+                        selection.start = {r, c: parseInt(td.dataset.c)};
+                        selection.end = {r, c: parseInt(td.dataset.c)};
                         updateSelectionUI();
                     });
 
                     td.addEventListener("mouseenter", () => {
                         if (selection.active) {
-                            selection.end = { r, c: parseInt(td.dataset.c) };
+                            selection.end = {r, c: parseInt(td.dataset.c)};
                             updateSelectionUI();
                         }
                     });
@@ -3072,7 +3254,7 @@ function openTableEditorModal() {
                 for (let i = 0; i < currentGrid[r].length; i++) {
                     const cell = currentGrid[r][i];
                     if (r === rStart && logicCol === cStart) {
-                        newRow.push({ content: cell.content, colspan: targetColspan, rowspan: targetRowspan });
+                        newRow.push({content: cell.content, colspan: targetColspan, rowspan: targetRowspan});
                     } else {
                         const inMergeRange = (r >= rStart && r <= rEnd && logicCol >= cStart && logicCol <= cEnd);
                         if (!inMergeRange) {
@@ -3226,8 +3408,8 @@ function openTableEditorModal() {
             updateSyntax();
             const finalSyntax = syntaxPreview.textContent;
             view.dispatch({
-                changes: { from: tableNode.span.start, to: tableNode.span.end, insert: finalSyntax },
-                selection: { anchor: tableNode.span.start + finalSyntax.length }
+                changes: {from: tableNode.span.start, to: tableNode.span.end, insert: finalSyntax},
+                selection: {anchor: tableNode.span.start + finalSyntax.length}
             });
             modal.remove();
             window.removeEventListener("mouseup", handleMouseUp);
