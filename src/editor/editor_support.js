@@ -1,5 +1,45 @@
-window.cm_instances = [];
+// Worker 환경 등에서 잘못 로드되었을 때 에러 방지
+const isBrowser = typeof window !== 'undefined';
 
+if (isBrowser) {
+    window.cm_instances = [];
+}
+
+let worker = null;
+if (isBrowser) {
+    worker = new Worker(new URL('./worker.js', import.meta.url), { type: "module" });
+}
+
+function runWorker(type, payload) {
+    if (!worker) {
+        return Promise.reject(new Error("Worker not initialized"));
+    }
+    return new Promise((resolve, reject) => {
+        const id = window.crypto.randomUUID().substring(0, 5);
+        const handler = (e) => {
+            worker.removeEventListener('message', handler);
+            if (e.data.status === 'success') {
+                resolve(e.data.result);
+            } else {
+                reject(e.data.error || e.data.result || "Unknown Worker Error");
+            }
+        };
+
+        worker.addEventListener('message', handler);
+        worker.postMessage({ id, type, payload });
+    });
+}
+async function loadExcelSheet(uint8Arr) {
+    return await runWorker("GET_SHEETS", { data: uint8Arr });
+}
+
+async function loadExcelData(uint8Arr, sheetName) {
+    return await runWorker("OPEN_EXCEL", { data: uint8Arr, sheetName })
+}
+
+async function loadCsvData(uint8Arr) {
+    return await runWorker("OPEN_CSV", { data: uint8Arr });
+}
 // 전역 변수로 저장될 CodeMirror 모듈들
 let CM = null;
 
@@ -87,6 +127,7 @@ var cm_css = `
     --sm-color-underline: #313de2;
     --sm-color-script: #005cc5;
     --sm-color-header: #0366d6;
+    --sm-color-head: #3b719c;
     --sm-border-header: #eaecef;
     --sm-color-quote: #596068;
     --sm-border-quote: #dfe2e5;
@@ -143,6 +184,7 @@ body.dark {
     --sm-color-underline: #79b8ff;
     --sm-color-script: #4fc1ff;
     --sm-color-header: #569cd6;
+    --sm-color-head: #5d9ed3ff;
     --sm-border-header: #3e3e42;
     --sm-color-quote: #9cdcfe;
     --sm-border-quote: #3e3e42;
@@ -202,7 +244,7 @@ body.dark {
 .cm-sm-Underline { color: var(--sm-color-underline); }
 .cm-sm-Superscript { font-size: 0.85em; color: var(--sm-color-script); }
 .cm-sm-Subscript { font-size: 0.85em; color: var(--sm-color-script); }
-.cm-sm-Header { color: var(--sm-color-header); font-weight: bold; border-bottom: 1px solid var(--sm-border-header); }
+.cm-sm-Header { color: var(--sm-color-head); font-weight: bold; border-bottom: 1px solid var(--sm-border-header); }
 .cm-sm-BlockQuote { color: var(--sm-color-quote); border-left: 0.25em solid var(--sm-border-quote); padding-left: 0.5em; font-style: italic; }
 .cm-sm-HLine { display: block; border-top: 2px solid var(--sm-border-hline); margin: 4px 0; }
 .cm-sm-HardBreak { color: var(--sm-color-hardbreak); font-weight: bold; }
@@ -672,7 +714,7 @@ const cm_styles = `
     .sm_settings_info_title {
         font-size: 1.2rem;
         font-weight: bold;
-        color: var(--sm-color-header);
+        color: var(--sm-color-text);
     }
     .sm_settings_info_content {
         font-size: 0.85rem;
@@ -746,8 +788,10 @@ function loadEditorTheme() {
 }
 
 // 전역에 등록
-window.setEditorTheme = setEditorTheme;
-window.loadEditorTheme = loadEditorTheme;
+if (typeof window !== 'undefined') {
+    window.setEditorTheme = setEditorTheme;
+    window.loadEditorTheme = loadEditorTheme;
+}
 var targetScroll = 0;
 var currentScroll = 0;
 var isRunning = false;
@@ -756,7 +800,7 @@ var lastSetTop = { editor: -1, preview: -1 };
 const lerpFactor = 0.2;
 export async function init_codemirror(parent, initialDoc = "") {
     const CM = await ensure_codemirror();
-    const { EditorView, EditorState, basicSetup, keymap, undoDepth, redoDepth, indentWithTab} = CM;
+    const { EditorView, EditorState, basicSetup, keymap, undoDepth, redoDepth, indentWithTab } = CM;
 
     const style = document.createElement("style");
     style.textContent = cm_css;
@@ -1074,8 +1118,10 @@ export function set_editor_text(text) {
 }
 
 // 전역에서 접근할 수 있도록 window 객체에 등록
-window.get_editor_text = get_editor_text;
-window.set_editor_text = set_editor_text;
+if (typeof window !== 'undefined') {
+    window.get_editor_text = get_editor_text;
+    window.set_editor_text = set_editor_text;
+}
 
 function setup_toolbar(CM) {
     const { openSearchPanel, closeSearchPanel, undo, redo } = CM;
@@ -1204,6 +1250,22 @@ function setup_toolbar(CM) {
                 { text: "테이블 생성", icon: "add", onClick: () => makingTableModal() },
                 { text: "테이블 편집", icon: "table_edit", onClick: () => openTableEditorModal() }
             ]
+        },
+        {
+            id: "sm-toolbar-ruby",
+            astType: "Ruby",
+            className: "sm_toolbar_btn",
+            html: "<ruby>猫<rt>ねこ</rt></ruby>",
+            title: "루비 문자",
+            onClick: () => toggleSyntax("{{{#ruby ", " }}}", "Ruby")
+        },
+        {
+            id: "sm-toolbar-footnote",
+            astType: "Footnote",
+            className: "sm_toolbar_btn",
+            text: "note",
+            title: "각주",
+            onClick: () => toggleSyntax("{{{#fn ", " }}}", "Footnote")
         }
     ];
     Buttons.forEach((button) => {
@@ -1613,7 +1675,9 @@ export function get_cm_ast() {
     const raw = state.doc.toString();
     return JSON.parse(window.cm_highlighter(raw));
 }
-window.get_cm_ast = get_cm_ast;
+if (typeof window !== 'undefined') {
+    window.get_cm_ast = get_cm_ast;
+}
 
 function findNodeByType(nodes, from, to, targetType) {
     if (!nodes) return null;
@@ -1635,7 +1699,7 @@ function findNodeByType(nodes, from, to, targetType) {
 }
 function createModal(content, onMount, isClosingWarning = false) {
     const sm_ed_area = document.getElementById("sm-editor-raw");
-    if(sm_ed_area.querySelector(".sm_modal")){
+    if (sm_ed_area.querySelector(".sm_modal")) {
         return; // 이미 생성된 경우 무시 (DOM 생성 전 체크)
     }
     const modal = document.createElement("div");
@@ -1911,9 +1975,10 @@ function makingTableModal() {
 
                     if (isCsv || isExcel) {
                         const reader = new FileReader();
-                        reader.onload = (event) => {
+                        reader.onload = async (event) => {
                             try {
                                 const data = new Uint8Array(event.target.result);
+                                const fileDropZone = modal.querySelector("#file-drop-zone");
                                 const importBtn = modal.querySelector("#import-table-btn");
                                 const sheetSelect = modal.querySelector("#sheet-select");
                                 const sheetSelectContainer = modal.querySelector("#sheet-select-container");
@@ -1944,7 +2009,21 @@ function makingTableModal() {
 
                                 if (!isCsv) {
                                     importBtn.disabled = true;
-                                    const sheetNames = window.excel_get_worksheets(data);
+                                    fileDropZone.style.pointerEvents = "none";
+                                    fileDropZone.style.opacity = "0.5";
+
+                                    previewArea.innerHTML = `
+                                        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding-top: 30px;">
+                                            <div style="border: 3px solid var(--sm-border-editor); border-top: 3px solid var(--sm-color-header); border-radius: 50%; width: 24px; height: 24px; animation: sm-spin 1s linear infinite;"></div>
+                                            <span style="margin-top: 10px; font-size: 0.8rem; opacity: 0.8;">워크시트 로딩 중...</span>
+                                        </div>
+                                        <style>@keyframes sm-spin {0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); }}</style>
+                                    `;
+
+                                    const sheetNames = await loadExcelSheet(data);
+
+                                    fileDropZone.style.pointerEvents = "auto";
+                                    fileDropZone.style.opacity = "1";
                                     sheetSelectContainer.classList.remove("hidden");
                                     sheetSelect.innerHTML = "";
                                     sheetNames.forEach(sheetName => {
@@ -1955,9 +2034,16 @@ function makingTableModal() {
                                     });
                                     pickSheet = sheetNames[0] || "";
 
-                                    const updateExcelPreview = (sheet) => {
+                                    const updateExcelPreview = async (sheet) => {
+                                        // 미리보기 로딩 표시
+                                        previewArea.innerHTML = `
+                                            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding-top: 30px;">
+                                                <div style="border: 3px solid var(--sm-border-editor); border-top: 3px solid var(--sm-color-header); border-radius: 50%; width: 24px; height: 24px; animation: sm-spin 1s linear infinite;"></div>
+                                                <span style="margin-top: 10px; font-size: 0.8rem; opacity: 0.8;">데이터 로딩 중...</span>
+                                            </div>
+                                        `;
                                         try {
-                                            const resultJson = window.excel_open_book(data, sheet);
+                                            const resultJson = await loadExcelData(data, sheet);
                                             let rows = [];
                                             try {
                                                 rows = JSON.parse(resultJson).Ok || [];
@@ -1967,7 +2053,8 @@ function makingTableModal() {
                                             // 첫 번째 열이 모두 비어있는지 확인 (사용자 실수 보정)
                                             const isFirstColEmpty = rows.length > 0 && rows.every(r => r[0] === null || r[0] === undefined || String(r[0]).trim() === "");
                                             renderFilePreview(isFirstColEmpty ? rows.map(row => row.slice(1)) : rows);
-                                        } catch (e) { }
+                                        } catch (e) {
+                                        }
                                     };
 
                                     sheetSelect.addEventListener("change", () => {
@@ -1979,9 +2066,10 @@ function makingTableModal() {
                                 } else {
                                     sheetSelectContainer.classList.add("hidden");
                                     try {
-                                        const resultJson = window.open_csv(data);
+                                        const resultJson = await loadCsvData(data);
                                         renderFilePreview(JSON.parse(resultJson).Ok || []);
-                                    } catch (e) { }
+                                    } catch (e) {
+                                    }
                                     importBtn.disabled = false;
                                 }
 
@@ -1989,13 +2077,19 @@ function makingTableModal() {
                                 const newImportBtn = importBtn.cloneNode(true);
                                 importBtn.parentNode.replaceChild(newImportBtn, importBtn);
 
-                                newImportBtn.addEventListener("click", () => {
+                                newImportBtn.addEventListener("click", async () => {
+                                    // 버튼 로딩 상태 전환
+                                    const originalBtnText = newImportBtn.innerHTML;
+                                    newImportBtn.disabled = true;
+                                    newImportBtn.innerHTML = `<div style="display: inline-block; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; width: 14px; height: 14px; animation: sm-spin 1s linear infinite; vertical-align: middle; margin-right: 8px;"></div>생성 중...`;
+                                    newImportBtn.style.cursor = "wait";
+
                                     try {
                                         let resultJson;
                                         if (isCsv) {
-                                            resultJson = window.open_csv(data);
+                                            resultJson = await loadCsvData(data);
                                         } else {
-                                            resultJson = window.excel_open_book(data, pickSheet);
+                                            resultJson = await loadExcelData(data, pickSheet);
                                         }
 
                                         const result = JSON.parse(resultJson);
@@ -2067,6 +2161,10 @@ function makingTableModal() {
                                         modal.remove();
                                     } catch (err) {
                                         alert("에러: " + err);
+                                        // 에러 발생 시 버튼 상태 복구
+                                        newImportBtn.disabled = false;
+                                        newImportBtn.innerHTML = originalBtnText;
+                                        newImportBtn.style.cursor = "pointer";
                                     }
                                 });
                             } catch (error) {
@@ -2688,8 +2786,9 @@ function openTableEditorModal() {
         renderTable();
     }, true);
 }
-window.openTableEditorModal = openTableEditorModal;
-window.makingTableModal = makingTableModal;
-
-// 전역에 등록하여 ReferenceError 방지
-window.init_codemirror = init_codemirror;
+if (typeof window !== 'undefined') {
+    window.openTableEditorModal = openTableEditorModal;
+    window.makingTableModal = makingTableModal;
+    // 전역에 등록하여 ReferenceError 방지
+    window.init_codemirror = init_codemirror;
+}

@@ -5,6 +5,10 @@ use web_sys::HtmlDivElement;
 extern "C" {
     fn init_codemirror(parent: &web_sys::Element);
 }
+#[wasm_bindgen(module = "/src/editor/worker.js")]
+extern "C" {
+    fn worker_dummy();
+}
 pub fn inject(ed_container: &str, ed_height: Option<&str>) {
     let window = web_sys::window().expect("can't get window");
     let document = window.document().expect("can't get document");
@@ -59,4 +63,9 @@ pub fn inject(ed_container: &str, ed_height: Option<&str>) {
 
     // JS 브릿지를 통해 CodeMirror 주입
     init_codemirror(&raw_area);
+
+    // 워커 파일 포함을 위한 더미 호출 (실제 실행은 안됨, 의존성 유지용)
+    if false {
+        worker_dummy();
+    }
 }

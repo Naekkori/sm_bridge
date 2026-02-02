@@ -51,7 +51,11 @@ pub fn get_crate_info() -> String {
 }
 #[wasm_bindgen(start)]
 pub fn start() {
-    let window = web_sys::window().expect("no global window exists");
+    // Worker 환경에서는 window가 없으므로 importmap 주입 로직을 건너뜀
+    let window = match web_sys::window() {
+        Some(win) => win,
+        None => return,
+    };
     let document = window.document().expect("should have a document on window");
     let head = document.head().expect("should have a head in document");
 
