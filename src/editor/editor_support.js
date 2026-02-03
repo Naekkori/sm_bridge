@@ -799,6 +799,13 @@ const THEME_CONFIG = [
         default: "#ffffff",
         label: "text-secondary",
         inputId: "#sm-editor-text-secondary-color"
+    },
+    {
+        var: "--sm-btn-hover-bg",
+        key: "sm-editor-custom-btn-hover-bg",
+        default: "#e1e4e8",
+        label: "btn-background",
+        inputId: "#sm-editor-btn-bg-color"
     }
 ];
 
