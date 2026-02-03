@@ -1263,7 +1263,7 @@ function setup_toolbar(CM) {
                 // 헤더 라인(첫 줄)만 추출하여 스타일 파싱
                 const tagContent = raw.slice(targetNode.span.start, targetNode.span.end);
                 const headerLine = tagContent.split('\n')[0];
-                
+
                 const result = {};
                 const styleMatch = headerLine.match(/style="([^"]*)"/);
                 if (styleMatch) {
@@ -1281,82 +1281,83 @@ function setup_toolbar(CM) {
 
                 return Object.keys(result).length > 0 ? result : null;
             },
-                        onApply: (values) => {
-                            const {color, size, bg_color} = values;
-                            const view = window.cm_instances?.[window.cm_instances.length - 1];
-                            if (view) {
-                                const {state} = view;
-                                const {from, to} = state.selection.main;
-                                const text = state.doc.toString();
-                                const selectedText = state.sliceDoc(from, to);
-            
-                                // AST를 사용하여 현재 위치를 감싸는 가장 안쪽의 Styled 노드 찾기
-                                const ast = JSON.parse(window.cm_highlighter(text));
-                                const targetNode = findNodeByType(ast, from, to, "Styled");
-            
-                                const buildAttrStr = (baseAttrs = {}) => {
-                                    const merged = {...baseAttrs};
-                                    if (color) merged.color = color;
-                                    if (size) merged.size = size;
-                                    if (bg_color) merged.bg_color = bg_color;
-            
-                                    let str = "";
-                                    if (merged.color) str += `color:${merged.color}; `;
-                                    if (merged.size) str += `font-size:${merged.size}px; `;
-                                    if (merged.bg_color) str += `background-color:${merged.bg_color}; `;
-                                    return str.trim();
-                                };
-            
-                                if (targetNode) {
-                                    // === 기존 태그 수정 ===
-                                    const start = targetNode.span.start;
-                                    const end = targetNode.span.end;
-                                    const fullTag = text.slice(start, end);
-                                    const headerEndRelative = fullTag.indexOf('\n');
-                                    const headerEnd = headerEndRelative !== -1 ? start + headerEndRelative : end;
-            
-                                    const headerContent = text.slice(start, headerEnd);
-                                    const styleMatch = headerContent.match(/style="([^"]*)"/);
-            
-                                    const currentAttrs = {};
-                                    if (styleMatch) {
-                                        const styleStr = styleMatch[1];
-                                        const cMatch = styleStr.match(/color:\s*([^;"]+)/);
-                                        if (cMatch) currentAttrs.color = cMatch[1].trim();
-                                        const sMatch = styleStr.match(/font-size:\s*(\d+)px/);
-                                        if (sMatch) currentAttrs.size = parseInt(sMatch[1]);
-                                        const bMatch = styleStr.match(/background-color:\s*([^;"]+)/);
-                                        if (bMatch) currentAttrs.bg_color = bMatch[1].trim();
-                                    }
-            
-                                    const newAttrStr = buildAttrStr(currentAttrs);
-                                    const newHeader = `{{{#style="${newAttrStr}"`;
-            
-                                    // 원래 헤더의 {{{#style="..." 부분까지만 교체 범위로 설정
-                                    const headerMatch = headerContent.match(/\{\{\{#style="[^"]*"/);
-                                    let replaceTo = start + (headerMatch ? headerMatch[0].length : 9); // 9는 {{{#style 길이
-            
-                                    view.dispatch({
-                                        changes: {
-                                            from: start,
-                                            to: replaceTo,
-                                            insert: newHeader
-                                        }
-                                    });
-            
-                                } else {
-                                    // === 신규 태그 생성 ===
-                                    const newAttrStr = buildAttrStr({});
-                                    const openTag = `{{{#style="${newAttrStr}"\n`;
-                                    const closeTag = `\n}}}`;
-                                    view.dispatch({
-                                        changes: {from, to, insert: `${openTag}${selectedText}${closeTag}`},
-                                        selection: {anchor: from + openTag.length + (from === to ? 0 : selectedText.length)}
-                                    });
-                                }
-                                view.focus();
+            onApply: (values) => {
+                const {color, size, bg_color} = values;
+                const view = window.cm_instances?.[window.cm_instances.length - 1];
+                if (view) {
+                    const {state} = view;
+                    const {from, to} = state.selection.main;
+                    const text = state.doc.toString();
+                    const selectedText = state.sliceDoc(from, to);
+
+                    // AST를 사용하여 현재 위치를 감싸는 가장 안쪽의 Styled 노드 찾기
+                    const ast = JSON.parse(window.cm_highlighter(text));
+                    const targetNode = findNodeByType(ast, from, to, "Styled");
+
+                    const buildAttrStr = (baseAttrs = {}) => {
+                        const merged = {...baseAttrs};
+                        if (color) merged.color = color;
+                        if (size) merged.size = size;
+                        if (bg_color) merged.bg_color = bg_color;
+
+                        let str = "";
+                        if (merged.color) str += `color:${merged.color}; `;
+                        if (merged.size) str += `font-size:${merged.size}px; `;
+                        if (merged.bg_color) str += `background-color:${merged.bg_color}; `;
+                        return str.trim();
+                    };
+
+                    if (targetNode) {
+                        // === 기존 태그 수정 ===
+                        const start = targetNode.span.start;
+                        const end = targetNode.span.end;
+                        const fullTag = text.slice(start, end);
+                        const headerEndRelative = fullTag.indexOf('\n');
+                        const headerEnd = headerEndRelative !== -1 ? start + headerEndRelative : end;
+
+                        const headerContent = text.slice(start, headerEnd);
+                        const styleMatch = headerContent.match(/style="([^"]*)"/);
+
+                        const currentAttrs = {};
+                        if (styleMatch) {
+                            const styleStr = styleMatch[1];
+                            const cMatch = styleStr.match(/color:\s*([^;"]+)/);
+                            if (cMatch) currentAttrs.color = cMatch[1].trim();
+                            const sMatch = styleStr.match(/font-size:\s*(\d+)px/);
+                            if (sMatch) currentAttrs.size = parseInt(sMatch[1]);
+                            const bMatch = styleStr.match(/background-color:\s*([^;"]+)/);
+                            if (bMatch) currentAttrs.bg_color = bMatch[1].trim();
+                        }
+
+                        const newAttrStr = buildAttrStr(currentAttrs);
+                        const newHeader = `{{{#style="${newAttrStr}"`;
+
+                        // 원래 헤더의 {{{#style="..." 부분까지만 교체 범위로 설정
+                        const headerMatch = headerContent.match(/\{\{\{#style="[^"]*"/);
+                        let replaceTo = start + (headerMatch ? headerMatch[0].length : 9); // 9는 {{{#style 길이
+
+                        view.dispatch({
+                            changes: {
+                                from: start,
+                                to: replaceTo,
+                                insert: newHeader
                             }
-                        }        },
+                        });
+
+                    } else {
+                        // === 신규 태그 생성 ===
+                        const newAttrStr = buildAttrStr({});
+                        const openTag = `{{{#style="${newAttrStr}"\n`;
+                        const closeTag = `\n}}}`;
+                        view.dispatch({
+                            changes: {from, to, insert: `${openTag}${selectedText}${closeTag}`},
+                            selection: {anchor: from + openTag.length + (from === to ? 0 : selectedText.length)}
+                        });
+                    }
+                    view.focus();
+                }
+            }
+        },
         {
             id: "sm-toolbar-bold",
             astType: "Bold",
@@ -1584,7 +1585,11 @@ function setup_toolbar(CM) {
             className: "sm_toolbar_btn",
             text: "note",
             title: "각주",
-            onClick: () => toggleSyntax("{{{#fn ", " }}}", "Footnote")
+            type: "dropdown",
+            options: [
+                {text: "각주 시작점 생성", icon: "flag", onClick: () => toggleSyntax("", "[fn]", "FnRef")},
+                {text: "각주 설명 생성 (시작점 필수)", icon: "comment", onClick: () => toggleSyntax("{{{#fn ", " }}}", "Footnote")}
+            ]
         }
     ];
     Buttons.forEach((button) => {
