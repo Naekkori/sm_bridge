@@ -7,7 +7,7 @@ if (isBrowser) {
 
 let worker = null;
 if (isBrowser) {
-    worker = new Worker(new URL('./worker.js', import.meta.url), {type: "module"});
+    worker = new Worker(new URL('./worker.js', import.meta.url), { type: "module" });
 }
 
 function runWorker(type, payload) {
@@ -26,20 +26,20 @@ function runWorker(type, payload) {
         };
 
         worker.addEventListener('message', handler);
-        worker.postMessage({id, type, payload});
+        worker.postMessage({ id, type, payload });
     });
 }
 
 async function loadExcelSheet(uint8Arr) {
-    return await runWorker("GET_SHEETS", {data: uint8Arr});
+    return await runWorker("GET_SHEETS", { data: uint8Arr });
 }
 
 async function loadExcelData(uint8Arr, sheetName) {
-    return await runWorker("OPEN_EXCEL", {data: uint8Arr, sheetName})
+    return await runWorker("OPEN_EXCEL", { data: uint8Arr, sheetName })
 }
 
 async function loadCsvData(uint8Arr) {
-    return await runWorker("OPEN_CSV", {data: uint8Arr});
+    return await runWorker("OPEN_CSV", { data: uint8Arr });
 }
 
 // 전역 변수로 저장될 CodeMirror 모듈들
@@ -50,11 +50,11 @@ async function ensure_codemirror() {
 
     // 동적 임포트로 모듈 로드 (WASM이 주입한 importmap을 참조함)
     const [
-        {EditorView, basicSetup},
-        {EditorState, StateField},
-        {Decoration, keymap},
-        {undoDepth, redoDepth, undo, redo, indentWithTab},
-        {openSearchPanel, closeSearchPanel}
+        { EditorView, basicSetup },
+        { EditorState, StateField },
+        { Decoration, keymap },
+        { undoDepth, redoDepth, undo, redo, indentWithTab },
+        { openSearchPanel, closeSearchPanel }
     ] = await Promise.all([
         import("codemirror"),
         import("@codemirror/state"),
@@ -75,7 +75,7 @@ async function ensure_codemirror() {
 
 // 하이라이팅 필드 생성 함수 (CM 로드 후 실행)
 function create_sm_highlight_field(CM) {
-    const {StateField, Decoration, EditorView} = CM;
+    const { StateField, Decoration, EditorView } = CM;
     return StateField.define({
         create() {
             return Decoration.none
@@ -98,7 +98,7 @@ function create_sm_highlight_field(CM) {
                     const data = el[type];
                     if (data && data.span) {
                         if (type !== "Text" && type !== "SoftBreak" && type !== "HardBreak") {
-                            marks.push(Decoration.mark({class: `cm-sm-${type}`}).range(data.span.start, data.span.end));
+                            marks.push(Decoration.mark({ class: `cm-sm-${type}` }).range(data.span.start, data.span.end));
                         }
                         if (data.children) collectMarks(data.children);
                         if (data.summary) collectMarks([data.summary]);
@@ -797,7 +797,7 @@ const THEME_CONFIG = [
         label: "bg",
         inputId: "#sm-editor-bg-color"
     },
-    {var: "--sm-bg-toolbar", key: "sm-editor-custom-bg", default: "#ffffff", label: "bg"}, // 배경색 연동
+    { var: "--sm-bg-toolbar", key: "sm-editor-custom-bg", default: "#ffffff", label: "bg" }, // 배경색 연동
     {
         var: "--sm-btn-text",
         key: "sm-editor-custom-btn",
@@ -870,7 +870,7 @@ let targetScroll = 0;
 let currentScroll = 0;
 let isRunning = false;
 let scrollSource = null; // 'editor' | 'preview'
-let lastSetTop = {editor: -1, preview: -1};
+let lastSetTop = { editor: -1, preview: -1 };
 const lerpFactor = 0.2;
 
 const LOADING_CSS = `
@@ -908,7 +908,7 @@ export async function init_codemirror(parent, initialDoc = "") {
     parent.appendChild(loader);
 
     const CM = await ensure_codemirror();
-    const {EditorView, EditorState, basicSetup, keymap, undoDepth, redoDepth, indentWithTab} = CM;
+    const { EditorView, EditorState, basicSetup, keymap, undoDepth, redoDepth, indentWithTab } = CM;
 
     const style = document.createElement("style");
     style.textContent = cm_css;
@@ -957,8 +957,8 @@ export async function init_codemirror(parent, initialDoc = "") {
     const fontSize = localStorage.getItem("sm-editor-font-size") || "12";
     document.documentElement.style.setProperty("--sm-editor-font-size", `${fontSize}pt`);
     const fixedHeightEditor = EditorView.theme({
-        "&": {height: "100%"},
-        "& .cm-scroller": {overflow: "auto", flex: "1"}
+        "&": { height: "100%" },
+        "& .cm-scroller": { overflow: "auto", flex: "1" }
     });
 
     const koPhrases = {
@@ -980,7 +980,7 @@ export async function init_codemirror(parent, initialDoc = "") {
 
             const ast = JSON.parse(highlighter(raw));
             const html = renderer(raw);
-            const {from, to} = update.state.selection.main;
+            const { from, to } = update.state.selection.main;
 
             const activeType = findActiveType(ast, from, to);
 
@@ -1122,7 +1122,7 @@ export async function init_codemirror(parent, initialDoc = "") {
             const pos = parseInt(target.getAttribute("data-start"));
             if (!isNaN(pos)) {
                 view.dispatch({
-                    selection: {anchor: pos, head: pos},
+                    selection: { anchor: pos, head: pos },
                     scrollIntoView: true
                 });
                 view.focus();
@@ -1244,7 +1244,7 @@ export function get_editor_text() {
 export function set_editor_text(text) {
     if (window.cm_instances && window.cm_instances.length > 0) {
         const view = window.cm_instances[window.cm_instances.length - 1];
-        view.dispatch({changes: {from: 0, to: view.state.doc.length, insert: text}});
+        view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: text } });
     }
 }
 
@@ -1274,13 +1274,13 @@ function setup_toolbar(CM) {
             type: "paramList",
             popupTitle: "스타일 설정",
             params: [
-                {name: "color", label: "글자 색상", type: "color", default: "#000000"},
-                {name: "size", label: "글자 크기", type: "number", default: 16, min: 8, max: 72, suffix: "px"},
-                {name: "bg_color", label: "배경 색상", type: "color", default: "rgba(0, 0, 0, 0)"}
+                { name: "color", label: "글자 색상", type: "color", default: "#000000" },
+                { name: "size", label: "글자 크기", type: "number", default: 16, min: 8, max: 72, suffix: "px" },
+                { name: "bg_color", label: "배경 색상", type: "color", default: "rgba(0, 0, 0, 0)" }
             ],
             getInitialValues: (view) => {
-                const {state} = view;
-                const {from, to} = state.selection.main;
+                const { state } = view;
+                const { from, to } = state.selection.main;
                 const raw = state.doc.toString();
 
                 // AST를 사용하여 현재 위치를 감싸는 가장 안쪽의 Styled 노드 찾기
@@ -1311,11 +1311,11 @@ function setup_toolbar(CM) {
                 return Object.keys(result).length > 0 ? result : null;
             },
             onApply: (values) => {
-                const {color, size, bg_color} = values;
+                const { color, size, bg_color } = values;
                 const view = window.cm_instances?.[window.cm_instances.length - 1];
                 if (view) {
-                    const {state} = view;
-                    const {from, to} = state.selection.main;
+                    const { state } = view;
+                    const { from, to } = state.selection.main;
                     const text = state.doc.toString();
                     const selectedText = state.sliceDoc(from, to);
 
@@ -1324,7 +1324,7 @@ function setup_toolbar(CM) {
                     const targetNode = findNodeByType(ast, from, to, "Styled");
 
                     const buildAttrStr = (baseAttrs = {}) => {
-                        const merged = {...baseAttrs};
+                        const merged = { ...baseAttrs };
                         if (color) merged.color = color;
                         if (size) merged.size = size;
                         if (bg_color) merged.bg_color = bg_color;
@@ -1379,8 +1379,8 @@ function setup_toolbar(CM) {
                         const openTag = `{{{#style="${newAttrStr}"\n`;
                         const closeTag = `\n}}}`;
                         view.dispatch({
-                            changes: {from, to, insert: `${openTag}${selectedText}${closeTag}`},
-                            selection: {anchor: from + openTag.length + (from === to ? 0 : selectedText.length)}
+                            changes: { from, to, insert: `${openTag}${selectedText}${closeTag}` },
+                            selection: { anchor: from + openTag.length + (from === to ? 0 : selectedText.length) }
                         });
                     }
                     view.focus();
@@ -1419,7 +1419,7 @@ function setup_toolbar(CM) {
             title: "취소선",
             onClick: () => toggleSyntax("~~", "~~", "Strikethrough")
         },
-        {id: "sm-separator", className: "sm_toolbar_btn sm_toolbar_separator"},
+        { id: "sm-separator", className: "sm_toolbar_btn sm_toolbar_separator" },
         {
             id: "sm-toolbar-superscript",
             astType: "Superscript",
@@ -1444,11 +1444,11 @@ function setup_toolbar(CM) {
             title: "수식",
             type: "dropdown",
             options: [
-                {text: "인라인 수식", icon: "functions", onClick: () => toggleSyntax("{{{#tex", "}}}", "TeX")},
-                {text: "블록 수식", icon: "functions", onClick: () => toggleSyntax("{{{#tex #block\n", "\n}}}", "TeX")},
+                { text: "인라인 수식", icon: "functions", onClick: () => toggleSyntax("{{{#tex", "}}}", "TeX") },
+                { text: "블록 수식", icon: "functions", onClick: () => toggleSyntax("{{{#tex #block\n", "\n}}}", "TeX") },
             ]
         },
-        {id: "sm-separator", className: "sm_toolbar_btn sm_toolbar_separator"},
+        { id: "sm-separator", className: "sm_toolbar_btn sm_toolbar_separator" },
         {
             id: "sm-toolbar-headings",
             astType: "Header",
@@ -1503,13 +1503,13 @@ function setup_toolbar(CM) {
             title: "가로선",
             type: "dropdown",
             options: [
-                {text: "가로선 3개", icon: "horizontal_rule", onClick: () => wrapSelection("---", "")},
-                {text: "가로선 4개", icon: "horizontal_rule", onClick: () => wrapSelection("----", "")},
-                {text: "가로선 5개", icon: "horizontal_rule", onClick: () => wrapSelection("-----", "")},
-                {text: "가로선 6개", icon: "horizontal_rule", onClick: () => wrapSelection("------", "")},
-                {text: "가로선 7개", icon: "horizontal_rule", onClick: () => wrapSelection("-------", "")},
-                {text: "가로선 8개", icon: "horizontal_rule", onClick: () => wrapSelection("--------", "")},
-                {text: "가로선 9개", icon: "horizontal_rule", onClick: () => wrapSelection("---------", "")},
+                { text: "가로선 3개", icon: "horizontal_rule", onClick: () => wrapSelection("---", "") },
+                { text: "가로선 4개", icon: "horizontal_rule", onClick: () => wrapSelection("----", "") },
+                { text: "가로선 5개", icon: "horizontal_rule", onClick: () => wrapSelection("-----", "") },
+                { text: "가로선 6개", icon: "horizontal_rule", onClick: () => wrapSelection("------", "") },
+                { text: "가로선 7개", icon: "horizontal_rule", onClick: () => wrapSelection("-------", "") },
+                { text: "가로선 8개", icon: "horizontal_rule", onClick: () => wrapSelection("--------", "") },
+                { text: "가로선 9개", icon: "horizontal_rule", onClick: () => wrapSelection("---------", "") },
             ]
         },
         {
@@ -1591,8 +1591,8 @@ function setup_toolbar(CM) {
             title: "테이블",
             type: "dropdown",
             options: [
-                {text: "테이블 생성", icon: "add", onClick: () => makingTableModal()},
-                {text: "테이블 편집", icon: "table_edit", onClick: () => openTableEditorModal()}
+                { text: "테이블 생성", icon: "add", onClick: () => makingTableModal() },
+                { text: "테이블 편집", icon: "table_edit", onClick: () => openTableEditorModal() }
             ]
         },
         {
@@ -1603,7 +1603,7 @@ function setup_toolbar(CM) {
             title: "루비 문자",
             onClick: () => {
                 const cminst = window.cm_instances[window.cm_instances.length - 1];
-                const {from, to} = cminst.state.selection.main;
+                const { from, to } = cminst.state.selection.main;
                 const selection = cminst.state.sliceDoc(from, to);
                 toggleSyntax(`{{{#ruby #ruby="${selection.length === 0 ? "ねこ" : "원하는 내용을 넣으십시오"}"`, " }}}", "Ruby", "猫")
             }
@@ -1616,9 +1616,93 @@ function setup_toolbar(CM) {
             title: "각주",
             type: "dropdown",
             options: [
-                {text: "각주 시작점 생성", icon: "flag", onClick: () => toggleSyntax("", "[fn]", "FnRef")},
-                {text: "각주 설명 생성 (시작점 필수)", icon: "comment", onClick: () => toggleSyntax("{{{#fn ", " }}}", "Footnote")}
+                { text: "각주 시작점 생성", icon: "flag", onClick: () => toggleSyntax("", "[fn]", "FnRef") },
+                { text: "각주 설명 생성 (시작점 필수)", icon: "comment", onClick: () => toggleSyntax("{{{#fn ", " }}}", "Footnote") }
             ]
+        },
+        {
+            id: "sm-toolbar-link",
+            astType: "Media",
+            className: "sm_toolbar_btn",
+            text: "link_2",
+            title: "링크",
+            type: "paramList",
+            params: [
+                { name: "url", label: "링크 주소", type: "text", default: "http://" }
+            ],
+            getInitialValues: view => {
+                const { state } = view;
+                const { from, to } = state.selection.main;
+                const raw = state.doc.toString();
+
+                try {
+                    const astJson = window.cm_highlighter(raw);
+                    const ast = JSON.parse(astJson);
+                    const targetNode = findNodeByType(ast, from, to, "Media");
+
+                    console.log("Link Debug - Selection:", { from, to });
+                    console.log("Link Debug - TargetNode:", targetNode);
+
+                    if (!targetNode) return null;
+
+                    // parameters가 없을 경우를 대비한 안전한 접근
+                    const params = targetNode.parameters || {};
+                    let url = null;
+                    if (params.url && params.url.value && params.url.value.length > 0) {
+                        const firstVal = params.url.value[0];
+                        if (firstVal.Text && firstVal.Text.value) {
+                            url = firstVal.Text.value;
+                        } else {
+                            url = typeof firstVal === "string" ? firstVal : null;
+                        }
+                    }
+
+                    console.log("Link Debug - Found URL:", url);
+                    return url ? { url } : null;
+                } catch (e) {
+                    console.error("Link Debug - Error:", e);
+                    return null;
+                }
+            },
+            onApply: values => {
+                const { url } = values;
+                const view = window.cm_instances?.[window.cm_instances.length - 1];
+                if (view) {
+                    const { state } = view;
+                    const { from, to } = state.selection.main;
+                    const text = state.doc.toString();
+                    // AST를 사용하여 현재 위치를 감싸는 가장 안쪽의 Media 노드 찾기
+                    const ast = JSON.parse(window.cm_highlighter(text));
+                    const targetNode = findNodeByType(ast, from, to, "Media");
+                    const makeTag = (urlValue) => `[[#url="${urlValue}"]]`;
+                    if (targetNode) {
+                        const start = targetNode.span.start;
+                        const end = targetNode.span.end;
+                        view.dispatch(
+                            {
+                                changes: {
+                                    from: start,
+                                    to: end,
+                                    insert: makeTag(url)
+                                }
+                            }
+                        );
+                    } else {
+                        const selectedText = state.sliceDoc(from, to);
+                        view.dispatch(
+                            {
+                                changes: {
+                                    from: from,
+                                    to: to,
+                                    insert: makeTag(url)
+                                },
+                                selection: { anchor: from + makeTag(url).length + (from === to ? 0 : selectedText.length) }
+                            }
+                        );
+                    }
+                    view.focus();
+                }
+            }
         }
     ];
     Buttons.forEach((button) => {
@@ -1772,7 +1856,7 @@ function setup_toolbar(CM) {
                     alphaInput.max = "1";
                     alphaInput.step = "0.01";
                     alphaInput.className = "sm_settings_range";
-                    Object.assign(alphaInput.style, {width: "60px", cursor: "pointer"});
+                    Object.assign(alphaInput.style, { width: "60px", cursor: "pointer" });
 
                     const valDisplay = document.createElement("span");
                     Object.assign(valDisplay.style, {
@@ -1817,7 +1901,7 @@ function setup_toolbar(CM) {
                     colorInput.addEventListener("input", updateValueFromUI);
                     alphaInput.addEventListener("input", updateValueFromUI);
 
-                    inputs[param.name] = {hiddenInput, updateUI: updateUIFromValue};
+                    inputs[param.name] = { hiddenInput, updateUI: updateUIFromValue };
 
                     updateUIFromValue(param.default);
 
@@ -1844,7 +1928,7 @@ function setup_toolbar(CM) {
                         suffix.style.color = "#666";
                         inputWrapper.appendChild(suffix);
                     }
-                    inputs[param.name] = {hiddenInput: input};
+                    inputs[param.name] = { hiddenInput: input };
                 }
 
                 row.appendChild(inputWrapper);
@@ -1936,7 +2020,7 @@ function setup_toolbar(CM) {
 }
 
 function RightToolbar(toolbar, CM) {
-    const {openSearchPanel, closeSearchPanel, undo, redo} = CM;
+    const { openSearchPanel, closeSearchPanel, undo, redo } = CM;
     const rightToolbar = document.createElement("div");
     rightToolbar.className = "sm_toolbar_right";
     toolbar.appendChild(rightToolbar);
@@ -1976,7 +2060,8 @@ function RightToolbar(toolbar, CM) {
         {
             id: "sm-toolbar-settings", className: "sm_toolbar_btn", text: "settings", title: "설정",
             onClick: () => {
-                const smBridgeLogo = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAExElEQVR4nOydy28bRRzHZ73r18bPOA+5TeOmSapWLZCKR1VAoBaKBKhInFE5gcQFJI6cOHJCSFw5of4BIAGHghAgqlblmUZG0CiBNo3rxLFjJ3bW68d6+TkbNm6yTvwTl271/WgO49mdkfzRzG9+Mz5Yuf312wL0hiJAz0AWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWg71kSR6vmnxUHXzYG0oq/mhTL9bLi9rS79rKjDBbnW/6o2OxyQuOg9TLmepKWl+dFcIULqerLH98cuCh12V/dPtVdZCKOnzKqK6W5r/ayP5sP/L4+vzxiS7jTIRHn23Vy/n0Jb3wl3AzHsdWJZgYmnqz01QncrA/cfKiL5rabjL3mTUeX3jo1Fve8IhwM84zKzZxQVIC7ZrZKs19oRdm65WMJMmhkScjh5+T/bHS3Jf1tduOfbPXPmhUslSRA3Fv33AwcSycOtd+IHli4y+uTH8iXIujLEkdfsSqrS98t37rW6tumq3ywg/lO1fUwZNa7sa9PaTdoxh6kQotPbJGi5dafC6fWQ7LUPaFhSRb9WZ1dedj09hpaj+siSbac8vdm6+DLKOxYW924YNnJNkn/h927G9sLAs34xTgae4sT1tVCskHn34/fvRVj6LuNUyXAC8pwejEy4H+o9bH8uIV4Wac10Vx9vPAwHGPEhSbG1k4dTY08hStvsri1Vpp3qFDR8xKnHjNNOrtoQP9cjBOz6z2yp0ftaXfhJtxlmXUSss/fdTODyKHrBZajH3Jx6k0tVzx5mfV/B/3dOiYWb7I6O4BK5lra/9cFi5HfvfiaccHrUalkrlKsdkbGm6H/P/wePv6ko+Rnlpxzm70qkObjV0h6ZHUWUpH9MJN4Vr22Z603DSVQOI4fdV26JG2Ylx0/KV6JVt12hbtPIsmoxIcUNQBdWhqU6UUSZ2jZILyD+FOetrL9cKfVORA/+DUG3auFD3ywrYspzyLIlejcpdKNTejBOP+2Dg1hg6cdq8sT++vGvrq0vUP7fOdL3yITto99q3m0laFDlLCtTCzRJNC/3wgccz6JMles9XopR+dtK1Ky6jZjaPnP+58Z+Gbd8T9jfPMorPh1oFuF3QbYVVaTa3V0LZa9zxIUwqiDk9ZdbqxEa7FYWZRfhAZOy/a8eWJyt3rG9lf6IJFkgO+yAhFaDvD1LK/7j20FeD9sSPh0WeoYjXaJ0034iDLXmXe0AHK3ansfsc09LXOr90R4JNn3hNdKC9835lwuA4HWYX0pUY5Exl73uMNOfahuJWf+ZTivegZo76+9vdlSuKFm5G6/gudJAcHT9BtFF3y0RZGl1l0A9G+I86nteUbNLU63/VFD8cnX9kxgGkahl5qanm9OFsr3XoArpUl/GVf7+DXHQaQxQCyGEAWg38BAAD////s03YAAAAGSURBVAMAlF1s4mdoB4EAAAAASUVORK5CYII="
+                //SB로고
+                const smBridgeLogo = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAExElEQVR4nOydy28bRRzHZ73r18bPOA+5TeOmSapWLZCKR1VAoBaKBKhInFE5gcQFJI6cOHJCSFw5of4BIAGHghAgqlblmUZG0CiBNo3rxLFjJ3bW68d6+TkbNm6yTvwTl271/WgO49mdkfzRzG9+Mz5Yuf312wL0hiJAz0AWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWg71kSR6vmnxUHXzYG0oq/mhTL9bLi9rS79rKjDBbnW/6o2OxyQuOg9TLmepKWl+dFcIULqerLH98cuCh12V/dPtVdZCKOnzKqK6W5r/ayP5sP/L4+vzxiS7jTIRHn23Vy/n0Jb3wl3AzHsdWJZgYmnqz01QncrA/cfKiL5rabjL3mTUeX3jo1Fve8IhwM84zKzZxQVIC7ZrZKs19oRdm65WMJMmhkScjh5+T/bHS3Jf1tduOfbPXPmhUslSRA3Fv33AwcSycOtd+IHli4y+uTH8iXIujLEkdfsSqrS98t37rW6tumq3ywg/lO1fUwZNa7sa9PaTdoxh6kQotPbJGi5dafC6fWQ7LUPaFhSRb9WZ1dedj09hpaj+siSbac8vdm6+DLKOxYW924YNnJNkn/h927G9sLAs34xTgae4sT1tVCskHn34/fvRVj6LuNUyXAC8pwejEy4H+o9bH8uIV4Wac10Vx9vPAwHGPEhSbG1k4dTY08hStvsri1Vpp3qFDR8xKnHjNNOrtoQP9cjBOz6z2yp0ftaXfhJtxlmXUSss/fdTODyKHrBZajH3Jx6k0tVzx5mfV/B/3dOiYWb7I6O4BK5lra/9cFi5HfvfiaccHrUalkrlKsdkbGm6H/P/wePv6ko+Rnlpxzm70qkObjV0h6ZHUWUpH9MJN4Vr22Z603DSVQOI4fdV26JG2Ylx0/KV6JVt12hbtPIsmoxIcUNQBdWhqU6UUSZ2jZILyD+FOetrL9cKfVORA/+DUG3auFD3ywrYspzyLIlejcpdKNTejBOP+2Dg1hg6cdq8sT++vGvrq0vUP7fOdL3yITto99q3m0laFDlLCtTCzRJNC/3wgccz6JMles9XopR+dtK1Ky6jZjaPnP+58Z+Gbd8T9jfPMorPh1oFuF3QbYVVaTa3V0LZa9zxIUwqiDk9ZdbqxEa7FYWZRfhAZOy/a8eWJyt3rG9lf6IJFkgO+yAhFaDvD1LK/7j20FeD9sSPh0WeoYjXaJ0034iDLXmXe0AHK3ansfsc09LXOr90R4JNn3hNdKC9835lwuA4HWYX0pUY5Exl73uMNOfahuJWf+ZTivegZo76+9vdlSuKFm5G6/gudJAcHT9BtFF3y0RZGl1l0A9G+I86nteUbNLU63/VFD8cnX9kxgGkahl5qanm9OFsr3XoArpUl/GVf7+DXHQaQxQCyGEAWg38BAAD////s03YAAAAGSURBVAMAlF1s4mdoB4EAAAAASUVORK5CYII=";
                 const view = window.cm_instances[window.cm_instances.length - 1];
                 if (!view) return;
 
@@ -2165,7 +2250,7 @@ function RightToolbar(toolbar, CM) {
                             themeData[item.label] = document.body.style.getPropertyValue(item.var).trim() || item.default;
                         });
 
-                        const blob = new Blob([JSON.stringify(themeData, null, 2)], {type: "application/json"});
+                        const blob = new Blob([JSON.stringify(themeData, null, 2)], { type: "application/json" });
                         const url = URL.createObjectURL(blob);
                         const a = document.createElement("a");
                         a.href = url;
@@ -2266,8 +2351,8 @@ function wrapTables(container) {
 function wrapSelection(before, after = before) {
     const view = window.cm_instances[window.cm_instances.length - 1];
     if (!view) return;
-    const {state} = view;
-    const {from, to} = state.selection.main;
+    const { state } = view;
+    const { from, to } = state.selection.main;
     const selectedText = state.sliceDoc(from, to);
     const isWrap = selectedText.startsWith(before) && selectedText.endsWith(after);
 
@@ -2275,8 +2360,8 @@ function wrapSelection(before, after = before) {
         view.dispatch(state.replaceSelection(selectedText.slice(before.length, -after.length)));
     } else {
         view.dispatch({
-            changes: {from, to, insert: `${before}${selectedText}${after}`},
-            selection: {anchor: from + before.length + (from === to ? 0 : selectedText.length)}
+            changes: { from, to, insert: `${before}${selectedText}${after}` },
+            selection: { anchor: from + before.length + (from === to ? 0 : selectedText.length) }
         });
     }
     view.focus();
@@ -2285,8 +2370,8 @@ function wrapSelection(before, after = before) {
 function toggleSyntax(before, after, astType, defaultContent = '') {
     const view = window.cm_instances[window.cm_instances.length - 1];
     if (!view) return;
-    const {state} = view;
-    const {from, to} = state.selection.main;
+    const { state } = view;
+    const { from, to } = state.selection.main;
     const raw = state.doc.toString();
     const ast = JSON.parse(window.cm_highlighter(raw));
 
@@ -2301,7 +2386,7 @@ function toggleSyntax(before, after, astType, defaultContent = '') {
         const content = raw.slice(start + before.length, end - after.length);
 
         view.dispatch({
-            changes: {from: start, to: end, insert: content},
+            changes: { from: start, to: end, insert: content },
             selection: {
                 anchor: Math.max(start, from - before.length),
                 head: Math.min(start + content.length, to - before.length)
@@ -2314,8 +2399,8 @@ function toggleSyntax(before, after, astType, defaultContent = '') {
             selectedText = defaultContent;
         }
         view.dispatch({
-            changes: {from, to, insert: `${before}${selectedText}${after}`},
-            selection: {anchor: from + before.length + (from === to ? 0 : selectedText.length)}
+            changes: { from, to, insert: `${before}${selectedText}${after}` },
+            selection: { anchor: from + before.length + (from === to ? 0 : selectedText.length) }
         });
     }
     view.focus();
@@ -2324,7 +2409,7 @@ function toggleSyntax(before, after, astType, defaultContent = '') {
 export function get_cm_ast() {
     const view = window.cm_instances[window.cm_instances.length - 1];
     if (!view) return;
-    const {state} = view;
+    const { state } = view;
     const raw = state.doc.toString();
     return JSON.parse(window.cm_highlighter(raw));
 }
@@ -2430,7 +2515,7 @@ function makingTableModal() {
                     <div style="background: var(--sm-bg-editor); padding: 15px; border-radius: 8px; border: 1px solid var(--sm-border-editor); display: flex; flex-direction: column; align-items: center;">
                         <div class="sm_modal_label" style="margin-bottom: 10px; font-size: 0.85rem; white-space: nowrap;">그리드 드래그 선택</div>
                         <div id="table-grid-picker" class="sm_grid_picker" style="display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; width: 160px; height: 160px;">
-                            ${Array.from({length: 100}).map((_, i) => `<div class="sm_grid_cell" data-row="${Math.floor(i / 10)}" data-col="${i % 10}" style="width: 100%; height: 100%; background: var(--sm-border-editor); border-radius: 1px; cursor: pointer;"></div>`).join("")}
+                            ${Array.from({ length: 100 }).map((_, i) => `<div class="sm_grid_cell" data-row="${Math.floor(i / 10)}" data-col="${i % 10}" style="width: 100%; height: 100%; background: var(--sm-border-editor); border-radius: 1px; cursor: pointer;"></div>`).join("")}
                         </div>
                     </div>
                     <div style="display: flex; flex-direction: column; gap: 15px; padding-right: 10px;">
@@ -2602,10 +2687,10 @@ function makingTableModal() {
 
             const view = window.cm_instances[window.cm_instances.length - 1];
             if (view) {
-                const {from, to} = view.state.selection.main;
+                const { from, to } = view.state.selection.main;
                 view.dispatch({
-                    changes: {from, to, insert: tableText},
-                    selection: {anchor: from + tableText.length}
+                    changes: { from, to, insert: tableText },
+                    selection: { anchor: from + tableText.length }
                 });
                 view.focus();
             }
@@ -2810,10 +2895,10 @@ function makingTableModal() {
 
                                         const view = window.cm_instances[window.cm_instances.length - 1];
                                         if (view) {
-                                            const {from, to} = view.state.selection.main;
+                                            const { from, to } = view.state.selection.main;
                                             view.dispatch({
-                                                changes: {from, to, insert: tableText},
-                                                selection: {anchor: from + tableText.length}
+                                                changes: { from, to, insert: tableText },
+                                                selection: { anchor: from + tableText.length }
                                             });
                                             view.focus();
                                         }
@@ -2847,24 +2932,37 @@ function makingTableModal() {
 function openTableEditorModal() {
     const view = window.cm_instances[window.cm_instances.length - 1];
     if (!view) return;
-    const {state} = view;
-    const {from, to} = state.selection.main;
+    const { state } = view;
+    const { from, to } = state.selection.main;
     const raw = state.doc.toString();
     const ast = JSON.parse(window.cm_highlighter(raw));
 
     function findNodeByType(nodes, from, to, targetType) {
         if (!nodes) return null;
+        let bestMatch = null;
+
         for (const node of nodes) {
             const type = Object.keys(node)[0];
             const data = node[type];
             if (data && data.span) {
-                if (from >= data.span.start && to <= data.span.end) {
-                    // 자식 노드에서 먼저 찾음 (가장 안쪽 노드 우선)
+                const { start, end } = data.span;
+
+                // 겹침 확인 (Overlap check)
+                const isOverlapping = from < end && to > start;
+                // 포함 확인 (Inclusion check - 더 높은 우선순위)
+                const isInside = from >= start && to <= end;
+
+                if (isOverlapping || isInside) {
+                    // 자식 노드에서 더 구체적인(더 작은) 노드가 있는지 먼저 확인
                     if (data.children) {
                         const found = findNodeByType(data.children, from, to, targetType);
                         if (found) return found;
                     }
-                    if (type === targetType) return {...data, type};
+
+                    // 자식 중에 없으면 현재 노드가 타겟 타입인지 확인
+                    if (type === targetType) {
+                        return data;
+                    }
                 }
             }
         }
@@ -2994,7 +3092,7 @@ function openTableEditorModal() {
                 break;
             }
 
-            gridRow.push({content, colspan, rowspan});
+            gridRow.push({ content, colspan, rowspan });
         });
         grid.push(gridRow);
     });
@@ -3039,7 +3137,7 @@ function openTableEditorModal() {
         const deselectBtn = modal.querySelector("#te-deselect-btn");
         const applyBtn = modal.querySelector("#te-apply-btn");
 
-        let selection = {start: null, end: null, active: false};
+        let selection = { start: null, end: null, active: false };
         let currentGrid = JSON.parse(JSON.stringify(grid));
 
         //히스토리 저장 Ctrl+Z Ctrl+Y
@@ -3185,14 +3283,14 @@ function openTableEditorModal() {
                     td.addEventListener("mousedown", () => {
                         if (editArea.contentEditable === "true") return; // 드래그불가 해결
                         selection.active = true;
-                        selection.start = {r, c: parseInt(td.dataset.c)};
-                        selection.end = {r, c: parseInt(td.dataset.c)};
+                        selection.start = { r, c: parseInt(td.dataset.c) };
+                        selection.end = { r, c: parseInt(td.dataset.c) };
                         updateSelectionUI();
                     });
 
                     td.addEventListener("mouseenter", () => {
                         if (selection.active) {
-                            selection.end = {r, c: parseInt(td.dataset.c)};
+                            selection.end = { r, c: parseInt(td.dataset.c) };
                             updateSelectionUI();
                         }
                     });
@@ -3284,7 +3382,7 @@ function openTableEditorModal() {
                 for (let i = 0; i < currentGrid[r].length; i++) {
                     const cell = currentGrid[r][i];
                     if (r === rStart && logicCol === cStart) {
-                        newRow.push({content: cell.content, colspan: targetColspan, rowspan: targetRowspan});
+                        newRow.push({ content: cell.content, colspan: targetColspan, rowspan: targetRowspan });
                     } else {
                         const inMergeRange = (r >= rStart && r <= rEnd && logicCol >= cStart && logicCol <= cEnd);
                         if (!inMergeRange) {
@@ -3438,8 +3536,8 @@ function openTableEditorModal() {
             updateSyntax();
             const finalSyntax = syntaxPreview.textContent;
             view.dispatch({
-                changes: {from: tableNode.span.start, to: tableNode.span.end, insert: finalSyntax},
-                selection: {anchor: tableNode.span.start + finalSyntax.length}
+                changes: { from: tableNode.span.start, to: tableNode.span.end, insert: finalSyntax },
+                selection: { anchor: tableNode.span.start + finalSyntax.length }
             });
             modal.remove();
             window.removeEventListener("mouseup", handleMouseUp);

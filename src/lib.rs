@@ -24,14 +24,18 @@ pub fn sm_renderer(raw: &str, config: JsValue) -> Result<String, JsValue> {
     } else {
         Some(serde_wasm_bindgen::from_value(config)?)
     };
-    let sm_config = wasm_config.as_ref().map(|config| sevenmark_html::RenderConfig {
-        file_base_url: config.file_base_url.as_deref(),
-        document_base_url: config.document_base_url.as_deref(),
-        category_base_url: config.category_base_url.as_deref(),
-        edit_url: config.edit_url.as_deref(),
-    }).unwrap_or_default();
-    let doc = sevenmark_parser::core::parse_document(&raw);
-    let html = sevenmark_html::render_document_with_spans(&doc, &sm_config, raw);
+    let sm_config = wasm_config
+        .as_ref()
+        .map(|config| sevenmark_html::RenderConfig {
+            file_base_url: config.file_base_url.as_deref(),
+            document_base_url: config.document_base_url.as_deref(),
+            category_base_url: config.category_base_url.as_deref(),
+            edit_url: config.edit_url.as_deref(),
+        })
+        .unwrap_or_default();
+    // parse_document는 항상 Vec<Element>를 반환하며, 에러는 Element::Error로 포함됩니다.
+    let elements = sevenmark_parser::core::parse_document(&raw);
+    let html = sevenmark_html::render_document_with_spans(&elements, &sm_config, &raw);
     Ok(html)
 }
 
