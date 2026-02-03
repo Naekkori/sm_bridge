@@ -1802,10 +1802,9 @@ function setup_toolbar(CM) {
                         // 일단 요청하신 rgba 반환을 위해 rgba 포맷 사용.
                         // 다만, hex만 지원하던 기존 로직과 충돌 방지를 위해 alpha가 1이면 hex로 할 수도 있음.
                         // 여기서는 무조건 rgba로 변환하여 반환
-                        const rgbaVal = `rgba(${r}, ${g}, ${b}, ${a})`;
-                        input.value = rgbaVal;
+                        input.value = `rgba(${r}, ${g}, ${b}, ${a})`;
 
-                        valDisplay.textContent = (a == 1) ? hex : `${a}`;
+                        valDisplay.textContent = (a === 1) ? hex : `${a}`;
                     };
                     // 초기 한번 실행하여 input.value 포맷 통일 (선택)
                     // updateValue(); 
@@ -2040,6 +2039,14 @@ function setup_toolbar(CM) {
                                         value="${getComputedStyle(document.body).getPropertyValue('--sm-btn-text').trim() || '#333'}">
                                 </div>
                             </div>
+                            <div class="sm_settings_row" style="margin-bottom: :0;">
+                                <span class="sm_settings_label">버튼 배경색상</span>
+                                <div class="sm_settings_value">
+                                    <input type="color" id="sm-editor-btn-bg-color" class="sm_settings_color"
+                                        style="cursor: pointer; border: none; background: transparent; width: 42px; height: 32px;"
+                                        value="${getComputedStyle(document.body).getPropertyValue('--sm-btn-hover-bg').trim()}">
+                                </div>
+                            </div>
                             <div class="sm_settings_row" style="margin-bottom: 0;">
                                 <span class="sm_settings_label">배경 색상</span>
                                 <div class="sm_settings_value">
@@ -2071,6 +2078,7 @@ function setup_toolbar(CM) {
                     const colorText = modal.querySelector("#sm-editor-text-color");
                     const colorBg = modal.querySelector("#sm-editor-bg-color");
                     const colorBtn = modal.querySelector("#sm-editor-btn-color");
+                    const colorBtnBg = modal.querySelector("#sm-editor-btn-bg-color");
                     const colorTextSecondary = modal.querySelector("#sm-editor-text-secondary-color");
                     const themeResetBtn = modal.querySelector("#sm-theme-reset-btn");
                     const themeSaveBtn = modal.querySelector("#sm-theme-save-btn");
@@ -2113,7 +2121,11 @@ function setup_toolbar(CM) {
                         document.body.style.setProperty("--sm-btn-text", color);
                         localStorage.setItem("sm-editor-custom-btn", color);
                     });
-
+                    colorBtnBg.addEventListener("input", (e) => {
+                        const color = e.target.value;
+                        document.body.style.setProperty("--sm-btn-hover-bg", color);
+                        localStorage.setItem("sm-editor-custom-btn-bg", color);
+                    });
                     colorTextSecondary.addEventListener("input", (e) => {
                         const color = e.target.value;
                         document.body.style.setProperty("--sm-color-text-secondary", color);
@@ -2682,6 +2694,7 @@ function makingTableModal() {
                                             try {
                                                 rows = JSON.parse(resultJson).Ok || [];
                                             } catch (e) {
+                                                // noinspection ExceptionCaughtLocallyJS
                                                 throw Error("데이터를 불러올 수 없습니다.");
                                             }
                                             // 첫 번째 열이 모두 비어있는지 확인 (사용자 실수 보정)
