@@ -814,7 +814,7 @@ const THEME_CONFIG = [
     },
     {
         var: "--sm-btn-hover-bg",
-        key: "sm-editor-custom-btn-hover-bg",
+        key: "sm-editor-custom-btn-bg",
         default: "#e1e4e8",
         label: "btn-background",
         inputId: "#sm-editor-btn-bg-color"
@@ -1771,6 +1771,7 @@ function setup_toolbar(CM) {
                     alphaInput.min = "0";
                     alphaInput.max = "1";
                     alphaInput.step = "0.01";
+                    alphaInput.className = "sm_settings_range";
                     Object.assign(alphaInput.style, {width: "60px", cursor: "pointer"});
 
                     const valDisplay = document.createElement("span");
