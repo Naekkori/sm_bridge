@@ -1285,14 +1285,7 @@ function setup_toolbar(CM) {
                     const styleStr = styleMatch[1];
 
                     const colorMatch = styleStr.match(/color:\s*([^;"]+)/);
-                    if (colorMatch) {
-                        let colorVal = colorMatch[1].trim();
-                        const argbMatch = colorVal.match(/^rgba\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)$/);
-                        if (argbMatch) {
-                            colorVal = `rgba(${argbMatch[1]}, ${argbMatch[2]}, ${argbMatch[3]}, ${argbMatch[4]})`;
-                        }
-                        result.color = colorVal;
-                    }
+                    if (colorMatch) result.color = colorMatch[1].trim();
 
                     const sizeMatch = styleStr.match(/font-size:\s*(\d+)px/);
                     if (sizeMatch) result.size = parseInt(sizeMatch[1]);
@@ -1744,38 +1737,12 @@ function setup_toolbar(CM) {
                 inputWrapper.style.alignItems = "center";
                 inputWrapper.style.gap = "5px";
 
-                let input;
                 if (param.type === 'color') {
-                    // 실제 값을 담을 input (외부에서는 이 값을 참조함)
-                    input = document.createElement("input");
-                    input.type = "hidden";
-                    input.value = param.default || "#000000";
+                    const hiddenInput = document.createElement("input");
+                    hiddenInput.type = "hidden";
 
-                    // 초기값 파싱 (rgba 또는 hex)
-                    let initialHex = "#000000";
-                    let initialAlpha = 1;
-                    const defVal = input.value;
-
-                    if (defVal.startsWith("rgba")) {
-                        const parts = defVal.match(/[\d.]+/g);
-                        if (parts && parts.length >= 3) {
-                            const r = parseInt(parts[0]).toString(16).padStart(2, '0');
-                            const g = parseInt(parts[1]).toString(16).padStart(2, '0');
-                            const b = parseInt(parts[2]).toString(16).padStart(2, '0');
-                            initialHex = `#${r}${g}${b}`;
-                            if (parts.length >= 4) initialAlpha = parseFloat(parts[3]);
-                        }
-                    } else if (defVal.startsWith("#")) {
-                        initialHex = defVal;
-                        if (initialHex.length === 4) { // #RGB -> #RRGGBB
-                            initialHex = "#" + initialHex[1] + initialHex[1] + initialHex[2] + initialHex[2] + initialHex[3] + initialHex[3];
-                        }
-                    }
-
-                    // UI: 색상 선택기
                     const colorInput = document.createElement("input");
                     colorInput.type = "color";
-                    colorInput.value = initialHex;
                     Object.assign(colorInput.style, {
                         border: "none",
                         padding: "0",
@@ -1785,72 +1752,73 @@ function setup_toolbar(CM) {
                         height: "24px"
                     });
 
-                    // UI: 투명도 슬라이더
                     const alphaInput = document.createElement("input");
                     alphaInput.type = "range";
                     alphaInput.min = "0";
                     alphaInput.max = "1";
                     alphaInput.step = "0.01";
-                    alphaInput.className = "sm_settings_range";
-                    alphaInput.value = initialAlpha;
-                    Object.assign(alphaInput.style, {
-                        width: "60px",
-                        cursor: "pointer"
-                    });
+                    Object.assign(alphaInput.style, {width: "60px", cursor: "pointer"});
 
-                    // UI: 값 표시
                     const valDisplay = document.createElement("span");
-                    valDisplay.textContent = initialAlpha === 1 ? initialHex : `rgba(..., ${initialAlpha})`;
                     Object.assign(valDisplay.style, {
-                        fontSize: "0.75em",
-                        color: "#666",
-                        width: "65px",
-                        textAlign: "right",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap"
+                        fontSize: "0.75em", color: "#666", width: "65px", textAlign: "right",
+                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"
                     });
 
-                    // 값 업데이트 함수
-                    const updateValue = () => {
+                    const updateUIFromValue = (colorString) => {
+                        let hex = "#000000";
+                        let alpha = 1.0;
+                        if (colorString && colorString.startsWith("rgba")) {
+                            const parts = colorString.match(/[\d.]+/g);
+                            if (parts && parts.length >= 4) {
+                                const r = parseInt(parts[0]).toString(16).padStart(2, '0');
+                                const g = parseInt(parts[1]).toString(16).padStart(2, '0');
+                                const b = parseInt(parts[2]).toString(16).padStart(2, '0');
+                                hex = `#${r}${g}${b}`;
+                                alpha = parseFloat(parts[3]);
+                            }
+                        } else if (colorString && colorString.startsWith("#")) {
+                            hex = colorString;
+                            if (hex.length === 4) { // #RGB -> #RRGGBB
+                                hex = "#" + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
+                            }
+                        }
+                        colorInput.value = hex;
+                        alphaInput.value = alpha;
+                        valDisplay.textContent = alpha === 1 ? hex : `${alpha}`;
+                        hiddenInput.value = colorString;
+                    };
+
+                    const updateValueFromUI = () => {
                         const hex = colorInput.value;
                         const r = parseInt(hex.slice(1, 3), 16);
                         const g = parseInt(hex.slice(3, 5), 16);
                         const b = parseInt(hex.slice(5, 7), 16);
-                        const a = alphaInput.value;
-
-                        // alpha가 1이면 hex로, 아니면 rgba로 저장 (선택 사항이나 깔끔함을 위해)
-                        // 여기서는 항상 통일성을 위해 rgba 권장하거나, 
-                        // 기존 로직과 호환성을 위해 1일땐 hex를 쓸 수도 있음.
-                        // 일단 요청하신 rgba 반환을 위해 rgba 포맷 사용.
-                        // 다만, hex만 지원하던 기존 로직과 충돌 방지를 위해 alpha가 1이면 hex로 할 수도 있음.
-                        // 여기서는 무조건 rgba로 변환하여 반환
-                        input.value = `rgba(${r}, ${g}, ${b}, ${a})`;
-
+                        const a = parseFloat(alphaInput.value);
+                        hiddenInput.value = `rgba(${r}, ${g}, ${b}, ${a})`;
                         valDisplay.textContent = (a === 1) ? hex : `${a}`;
                     };
-                    // 초기 한번 실행하여 input.value 포맷 통일 (선택)
-                    // updateValue(); 
 
-                    colorInput.addEventListener("input", updateValue);
-                    alphaInput.addEventListener("input", updateValue);
+                    colorInput.addEventListener("input", updateValueFromUI);
+                    alphaInput.addEventListener("input", updateValueFromUI);
+
+                    inputs[param.name] = {hiddenInput, updateUI: updateUIFromValue};
+
+                    updateUIFromValue(param.default);
 
                     inputWrapper.appendChild(colorInput);
                     inputWrapper.appendChild(alphaInput);
                     inputWrapper.appendChild(valDisplay);
 
-                } else if (param.type === 'number') {
-                    input = document.createElement("input");
-                    input.type = "number";
-                    input.value = param.default || 0;
+                } else { // For number and text inputs
+                    const input = document.createElement("input");
+                    input.type = param.type === 'number' ? 'number' : 'text';
+                    input.value = param.default || (param.type === 'number' ? 0 : '');
                     if (param.min !== undefined) input.min = param.min;
                     if (param.max !== undefined) input.max = param.max;
                     Object.assign(input.style, {
-                        width: "50px",
-                        border: "1px solid #ddd",
-                        borderRadius: "4px",
-                        padding: "4px",
-                        fontSize: "0.9em"
+                        width: param.type === 'number' ? "50px" : "120px",
+                        border: "1px solid #ddd", borderRadius: "4px", padding: "4px", fontSize: "0.9em"
                     });
                     inputWrapper.appendChild(input);
 
@@ -1861,20 +1829,9 @@ function setup_toolbar(CM) {
                         suffix.style.color = "#666";
                         inputWrapper.appendChild(suffix);
                     }
-                } else {
-                    input = document.createElement("input");
-                    input.type = "text";
-                    input.value = param.default || "";
-                    Object.assign(input.style, {
-                        border: "1px solid #ddd",
-                        borderRadius: "4px",
-                        padding: "4px",
-                        width: "120px"
-                    });
-                    inputWrapper.appendChild(input);
+                    inputs[param.name] = {hiddenInput: input};
                 }
 
-                inputs[param.name] = input;
                 row.appendChild(inputWrapper);
                 content.appendChild(row);
             });
@@ -1902,7 +1859,7 @@ function setup_toolbar(CM) {
         applyBtn.addEventListener("click", () => {
             const values = {};
             for (const key in inputs) {
-                values[key] = inputs[key].value;
+                values[key] = inputs[key].hiddenInput.value;
             }
             if (config.onApply) config.onApply(values);
             container.classList.remove("show");
@@ -1935,15 +1892,13 @@ function setup_toolbar(CM) {
             // 동적으로 계산된 기본값을 입력 필드에 반영
             if (config.params) {
                 config.params.forEach(param => {
-                    const input = inputs[param.name];
-                    if (input) {
-                        // 동적 기본값이 있으면 사용, 없으면 원래 기본값 사용
+                    const inputRefs = inputs[param.name];
+                    if (inputRefs) {
                         const newVal = dynDefaults.hasOwnProperty(param.name) ? dynDefaults[param.name] : (param.default || "");
-                        input.value = newVal;
-
-                        // 컬러 타입인 경우 옆의 텍스트 라벨도 갱신
-                        if (param.type === 'color' && input.nextElementSibling) {
-                            input.nextElementSibling.textContent = newVal;
+                        if (param.type === 'color' && inputRefs.updateUI) {
+                            inputRefs.updateUI(newVal);
+                        } else {
+                            inputRefs.hiddenInput.value = newVal;
                         }
                     }
                 });
