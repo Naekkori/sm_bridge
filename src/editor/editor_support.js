@@ -1776,7 +1776,6 @@ function setup_toolbar(CM) {
                     const colorInput = document.createElement("input");
                     colorInput.type = "color";
                     colorInput.value = initialHex;
-                    colorInput.className = "sm_settings_range";
                     Object.assign(colorInput.style, {
                         border: "none",
                         padding: "0",
@@ -1792,6 +1791,7 @@ function setup_toolbar(CM) {
                     alphaInput.min = "0";
                     alphaInput.max = "1";
                     alphaInput.step = "0.01";
+                    alphaInput.className = "sm_settings_range";
                     alphaInput.value = initialAlpha;
                     Object.assign(alphaInput.style, {
                         width: "60px",
