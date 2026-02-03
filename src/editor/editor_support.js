@@ -115,10 +115,11 @@ function create_sm_highlight_field(CM) {
     });
 }
 
-var cm_css = `
+const cm_css = `
 :root {
     --sm-bg-editor: #ffffff;
     --sm-color-text: #24292e;
+    --sm-icon-hover-color: #000;
     --sm-border-editor: #e1e4e8;
     --sm-color-comment: #6a737d;
     --sm-color-escape: #d73a49;
@@ -176,6 +177,7 @@ var cm_css = `
 body.dark {
     --sm-bg-editor: #2b2b2b;
     --sm-color-text: #e8e8e8;
+    --sm-icon-hover-color: #fff;
     --sm-border-editor: #3e3e42;
     --sm-color-comment: #6a9955;
     --sm-color-escape: #f48771;
@@ -292,7 +294,7 @@ const TOOLBAR_CSS = `
     .sm_toolbar { background: var(--sm-bg-toolbar); border-bottom: 1px solid var(--sm-border-toolbar); padding: 6px 12px; display: flex; gap: 4px; align-items: center; border-top-left-radius: 6px; border-top-right-radius: 6px; box-shadow: 0 1px 2px var(--sm-shadow-toolbar); position: relative; flex-wrap: wrap; }
     .sm_toolbar_btn { background: transparent; color: var(--sm-btn-text); border: 1px solid transparent; border-radius: 4px; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s cubic-bezier(0.3, 0, 0.5, 1); position: relative; }
     .sm_toolbar_btn .material-symbols-outlined { font-size: 20px; }
-    .sm_toolbar_btn:hover:not(:disabled) { background-color: var(--sm-btn-hover-bg); border-color: var(--sm-btn-hover-border); color: var(--sm-color-text); transform: translateY(-0.5px); }
+    .sm_toolbar_btn:hover:not(:disabled) { background-color: var(--sm-btn-hover-bg); border-color: var(--sm-btn-hover-border); color: var(--sm-icon-hover-color); transform: translateY(-0.5px); }
     .sm_toolbar_btn:active:not(:disabled), .sm_toolbar_btn.active { background-color: var(--sm-btn-active-bg); border-color: transparent; transform: translateY(0); transition-duration: 0.05s; }
     .sm_toolbar_btn:disabled { opacity: 0.4; cursor: not-allowed; color: var(--sm-btn-disabled); pointer-events: none; }
     .sm_toolbar_separator { width: 1px; height: 18px; background-color: var(--sm-separator); margin: 0 8px; align-self: center; border: none; }
@@ -1232,7 +1234,6 @@ if (typeof window !== 'undefined') {
 }
 
 function setup_toolbar(CM) {
-    const {openSearchPanel, closeSearchPanel, undo, redo} = CM;
     const parent = document.getElementById("sm-editor-raw");
     if (!parent || document.getElementById("sm-toolbar")) return;
     parent.style.position = "relative"; // 모달을 위한 상대 좌표계 설정
@@ -1946,7 +1947,11 @@ function setup_toolbar(CM) {
         });
         window.sm_dropdown_listener_added = true;
     }
+    RightToolbar(toolbar, CM);
+}
 
+function RightToolbar(toolbar, CM) {
+    const {openSearchPanel, closeSearchPanel, undo, redo} = CM;
     const rightToolbar = document.createElement("div");
     rightToolbar.className = "sm_toolbar_right";
     toolbar.appendChild(rightToolbar);
@@ -1986,7 +1991,7 @@ function setup_toolbar(CM) {
         {
             id: "sm-toolbar-settings", className: "sm_toolbar_btn", text: "settings", title: "설정",
             onClick: () => {
-                const smBridgeLogo = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAExElEQVR4nOydy28bRRzHZ73r18bPOA+5TeOmSapWLZCKR1VAoBaKBKhInFE5gcQFJI6cOHJCSFw5of4BIAGHghAgqlblmUZG0CiBNo3rxLFjJ3bW68d6+TkbNm6yTvwTl271/WgO49mdkfzRzG9+Mz5Yuf312wL0hiJAz0AWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWg71kSR6vmnxUHXzYG0oq/mhTL9bLi9rS79rKjDBbnW/6o2OxyQuOg9TLmepKWl+dFcIULqerLH98cuCh12V/dPtVdZCKOnzKqK6W5r/ayP5sP/L4+vzxiS7jTIRHn23Vy/n0Jb3wl3AzHsdWJZgYmnqz01QncrA/cfKiL5rabjL3mTUeX3jo1Fve8IhwM84zKzZxQVIC7ZrZKs19oRdm65WMJMmhkScjh5+T/bHS3Jf1tduOfbPXPmhUslSRA3Fv33AwcSycOtd+IHli4y+uTH8iXIujLEkdfsSqrS98t37rW6tumq3ywg/lO1fUwZNa7sa9PaTdoxh6kQotPbJGi5dafC6fWQ7LUPaFhSRb9WZ1dedj09hpaj+siSbac8vdm6+DLKOxYW924YNnJNkn/h927G9sLAs34xTgae4sT1tVCskHn34/fvRVj6LuNUyXAC8pwejEy4H+o9bH8uIV4Wac10Vx9vPAwHGPEhSbG1k4dTY08hStvsri1Vpp3qFDR8xKnHjNNOrtoQP9cjBOz6z2yp0ftaXfhJtxlmXUSss/fdTODyKHrBZajH3Jx6k0tVzx5mfV/B/3dOiYWb7I6O4BK5lra/9cFi5HfvfiaccHrUalkrlKsdkbGm6H/P/wePv6ko+Rnlpxzm70qkObjV0h6ZHUWUpH9MJN4Vr22Z603DSVQOI4fdV26JG2Ylx0/KV6JVt12hbtPIsmoxIcUNQBdWhqU6UUSZ2jZILyD+FOetrL9cKfVORA/+DUG3auFD3ywrYspzyLIlejcpdKNTejBOP+2Dg1hg6cdq8sT++vGvrq0vUP7fOdL3yITto99q3m0laFDlLCtTCzRJNC/3wgccz6JMles9XopR+dtK1Ky6jZjaPnP+58Z+Gbd8T9jfPMorPh1oFuF3QbYVVaTa3V0LZa9zxIUwqiDk9ZdbqxEa7FYWZRfhAZOy/a8eWJyt3rG9lf6IJFkgO+yAhFaDvD1LK/7j20FeD9sSPh0WeoYjXaJ0034iDLXmXe0AHK3ansfsc09LXOr90R4JNn3hNdKC9835lwuA4HWYX0pUY5Exl73uMNOfahuJWf+ZTivegZo76+9vdlSuKFm5G6/gudJAcHT9BtFF3y0RZGl1l0A9G+I86nteUbNLU63/VFD8cnX9kxgGkahl5qanm9OFsr3XoArpUl/GVf7+DXHQaQxQCyGEAWg38BAAD////s03YAAAAGSURBVAMAlF1s4mdoB4EAAAAASUVORK5CYII="
+                const smBridgeLogo = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAExElEQVR4nOydy28bRRzHZ73r18bPOA+5TeOmSapWLZCKR1VAoBaKBKhInFE5gcQFJI6cOHJCSFw5of4BIAGHghAgqlblmUZG0CiBNo3rxLFjJ3bW68d6+TkbNm6yTvwTl271/WgO49mdkfzRzG9+Mz5Yuf312wL0hiJAz0AWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWg71kSR6vmnxUHXzYG0oq/mhTL9bLi9rS79rKjDBbnW/6o2OxyQuOg9TLmepKWl+dFcIULqerLH98cuCh12V/dPtVdZCKOnzKqK6W5r/ayP5sP/L4+vzxiS7jTIRHn23Vy/n0Jb3wl3AzHsdWJZgYmnqz01QncrA/cfKiL5rabjL3mTUeX3jo1Fve8IhwM84zKzZxQVIC7ZrZKs19oRdm65WMJMmhkScjh5+T/bHS3Jf1tduOfbPXPmhUslSRA3Fv33AwcSycOtd+IHli4y+uTH8iXIujLEkdfsSqrS98t37rW6tumq3ywg/lO1fUwZNa7sa9PaTdoxh6kQotPbJGi5dafC6fWQ7LUPaFhSRb9WZ1dedj09hpaj+siSbac8vdm6+DLKOxYW924YNnJNkn/h927G9sLAs34xTgae4sT1tVCskHn34/fvRVj6LuNUyXAC8pwejEy4H+o9bH8uIV4Wac10Vx9vPAwHGPEhSbG1k4dTY08hStvsri1Vpp3qFDR8xKnHjNNOrtoQP9cjBOz6z2yp0ftaXfhJtxlmXUSss/fdTODyKHrBZajH3Jx6k0tVzx5mfV/B/3dOiYWb7I6O4BK5lra/9cFi5HfvfiaccHrUalkrlKsdkbGm6H/P/wePv6ko+Rnlpxzm70qkObjV0h6ZHUWUpH9MJN4Vr22Z603DSVQOI4fdV26JG2Ylx0/KV6JVt12hbtPIsmoxIcUNQBdWhqU6UUSZ2jZILyD+FOetrL9cKfVORA/+DUG3auFD3ywrYspzyLIlejcpdKNTejBOP+2Dg1hg6cdq8sT++vGvrq0vUP7fOdL3yITto99q3m0laFDlLCtTCzRJNC/3wgccz6JMles9XopR+dtK1Ky6jZjaPnP+58Z+Gbd8T9jfPMorPh1oFuF3QbYVVaTa3V0LZa9zxIUwqiDk9ZdbqxEa7FYWZRfhAZOy/a8eWJyt3rG9lf6IJFkgO+yAhFaDvD1LK/7j20FeD9sSPh0WeoYjXaJ0034iDLXmXe0AHK3ansfsc09LXOr90R4JNn3hNdKC9835lwuA4HWYX0pUY5Exl73uMNOfahuJWf+ZTivegZo76+9vdlSuKFm5G6/gudJAcHT9BtFF3y0RZGl1l0A9G+I86nteUbNLU63/VFD8cnX9kxgGkahl5qanm9OFsr3XoArpUl/GVf7+DXHQaQxQCyGEAWg38BAAD////s03YAAAAGSURBVAMAlF1s4mdoB4EAAAAASUVORK5CYII="
                 const view = window.cm_instances[window.cm_instances.length - 1];
                 if (!view) return;
 
@@ -2046,7 +2051,7 @@ function setup_toolbar(CM) {
                                         value="${getComputedStyle(document.body).getPropertyValue('--sm-btn-text').trim() || '#333'}">
                                 </div>
                             </div>
-                            <div class="sm_settings_row" style="margin-bottom: :0;">
+                            <div class="sm_settings_row" style="margin-bottom: 0;">
                                 <span class="sm_settings_label">버튼 배경색상</span>
                                 <div class="sm_settings_value">
                                     <input type="color" id="sm-editor-btn-bg-color" class="sm_settings_color"
