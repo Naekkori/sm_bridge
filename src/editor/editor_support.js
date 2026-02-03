@@ -230,7 +230,17 @@ body.dark {
     --sm-separator: #3e3e42;
     --sm-color-text-secondary: white;
 }
-
+/* SevenMark 테마 */
+body.seven_mark {
+    --sm-color-header: #3451b2;
+    --sm-color-text: #333333;
+    --sm-bg-editor: #ffffff;
+    --sm-bg-toolbar: #ffffff;
+    --sm-btn-text: #3451b2;
+    --sm-color-text-secondary: #ffffff;
+    --sm-btn-hover-bg: #d6d6d6;
+    --sm-icon-hover-color: #3451b2;
+}
 #sm-editor-raw { height: 100%; background: var(--sm-bg-editor); display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
 #sm-editor-preview { 
     height: 100%;
@@ -820,7 +830,7 @@ const THEME_CONFIG = [
 
 // 테마 전환 헬퍼 함수
 function setEditorTheme(theme) {
-    document.body.classList.remove("dark", "light", "custom");
+    document.body.classList.remove("dark", "light", "custom", "seven_mark");
 
     if (theme === "custom") {
         document.body.classList.add("custom");
@@ -830,6 +840,10 @@ function setEditorTheme(theme) {
             if (savedVal) document.body.style.setProperty(item.var, savedVal);
             else if (item.default) document.body.style.setProperty(item.var, item.default);
         });
+    } else if (theme === "seven_mark") {
+        document.body.classList.add("seven_mark");
+        // 커스텀 인라인 스타일 일괄 제거
+        THEME_CONFIG.forEach(item => document.body.style.removeProperty(item.var));
     } else {
         document.body.classList.add(theme === "dark" ? "dark" : "light");
         // 커스텀 인라인 스타일 일괄 제거
@@ -852,11 +866,11 @@ if (typeof window !== 'undefined') {
     window.setEditorTheme = setEditorTheme;
     window.loadEditorTheme = loadEditorTheme;
 }
-var targetScroll = 0;
-var currentScroll = 0;
-var isRunning = false;
-var scrollSource = null; // 'editor' | 'preview'
-var lastSetTop = {editor: -1, preview: -1};
+let targetScroll = 0;
+let currentScroll = 0;
+let isRunning = false;
+let scrollSource = null; // 'editor' | 'preview'
+let lastSetTop = {editor: -1, preview: -1};
 const lerpFactor = 0.2;
 
 const LOADING_CSS = `
@@ -1961,7 +1975,7 @@ function RightToolbar(toolbar, CM) {
         {
             id: "sm-toolbar-settings", className: "sm_toolbar_btn", text: "settings", title: "설정",
             onClick: () => {
-                const smBridgeLogo = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAExElEQVR4nOydy28bRRzHZ73r18bPOA+5TeOmSapWLZCKR1VAoBaKBKhInFE5gcQFJI6cOHJCSFw5of4BIAGHghAgqlblmUZG0CiBNo3rxLFjJ3bW68d6+TkbNm6yTvwTl271/WgO49mdkfzRzG9+Mz5Yuf312wL0hiJAz0AWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWg71kSR6vmnxUHXzYG0oq/mhTL9bLi9rS79rKjDBbnW/6o2OxyQuOg9TLmepKWl+dFcIULqerLH98cuCh12V/dPtVdZCKOnzKqK6W5r/ayP5sP/L4+vzxiS7jTIRHn23Vy/n0Jb3wl3AzHsdWJZgYmnqz01QncrA/cfKiL5rabjL3mTUeX3jo1Fve8IhwM84zKzZxQVIC7ZrZKs19oRdm65WMJMmhkScjh5+T/bHS3Jf1tduOfbPXPmhUslSRA3Fv33AwcSycOtd+IHli4y+uTH8iXIujLEkdfsSqrS98t37rW6tumq3ywg/lO1fUwZNa7sa9PaTdoxh6kQotPbJGi5dafC6fWQ7LUPaFhSRb9WZ1dedj09hpaj+siSbac8vdm6+DLKOxYW924YNnJNkn/h927G9sLAs34xTgae4sT1tVCskHn34/fvRVj6LuNUyXAC8pwejEy4H+o9bH8uIV4Wac10Vx9vPAwHGPEhSbG1k4dTY08hStvsri1Vpp3qFDR8xKnHjNNOrtoQP9cjBOz6z2yp0ftaXfhJtxlmXUSss/fdTODyKHrBZajH3Jx6k0tVzx5mfV/B/3dOiYWb7I6O4BK5lra/9cFi5HfvfiaccHrUalkrlKsdkbGm6H/P/wePv6ko+Rnlpxzm70qkObjV0h6ZHUWUpH9MJN4Vr22Z603DSVQOI4fdV26JG2Ylx0/KV6JVt12hbtPIsmoxIcUNQBdWhqU6UUSZ2jZILyD+FOetrL9cKfVORA/+DUG3auFD3ywrYspzyLIlejcpdKNTejBOP+2Dg1hg6cdq8sT++vGvrq0vUP7fOdL3yITto99q3m0laFDlLCtTCzRJNC/3wgccz6JMles9XopR+dtK1Ky6jZjaPnP+58Z+Gbd8T9jfPMorPh1oFuF3QbYVVaTa3V0LZa9zxIUwqiDk9ZdbqxEa7FYWZRfhAZOy/a8eWJyt3rG9lf6IJFkgO+yAhFaDvD1LK/7j20FeD9sSPh0WeoYjXaJ0034iDLXmXe0AHK3ansfsc09LXOr90R4JNn3hNdKC9835lwuA4HWYX0pUY5Exl73uMNOfahuJWf+ZTivegZo76+9vdlSuKFm5G6/gudJAcHT9BtFF3y0RZGl1l0A9G+I86nteUbNLU63/VFD8cnX9kxgGkahl5qanm9OFsr3XoArpUl/GVf7+DXHQaQxQCyGEAWg38BAAD////s03YAAAAGSURBVAMAlF1s4mdoB4EAAAAASUVORK5CYII="
+                const smBridgeLogo = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAExElEQVR4nOydy28bRRzHZ73r18bPOA+5TeOmSapWLZCKR1VAoBaKBKhInFE5gcQFJI6cOHJCSFw5of4BIAGHghAgqlblmUZG0CiBNo3rxLFjJ3bW68d6+TkbNm6yTvwTl271/WgO49mdkfzRzG9+Mz5Yuf312wL0hiJAz0AWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWA8hiAFkMIIsBZDGALAaQxQCyGEAWg71kSR6vmnxUHXzYG0oq/mhTL9bLi9rS79rKjDBbnW/6o2OxyQuOg9TLmepKWl+dFcIULqerLH98cuCh12V/dPtVdZCKOnzKqK6W5r/ayP5sP/L4+vzxiS7jTIRHn23Vy/n0Jb3wl3AzHsdWJZgYmnqz01QncrA/cfKiL5rabjL3mTUeX3jo1Fve8IhwM84zKzZxQVIC7ZrZKs19oRdm65WMJMmhkScjh5+T/bHS3Jf1tduOfbPXPmhUslSRA3Fv33AwcSycOtd+IHli4y+uTH8iXIujLEkdfsSqrS98t37rW6tumq3ywg/lO1fUwZNa7sa9PaTdoxh6kQotPbJGi5dafC6fWQ7LUPaFhSRb9WZ1dedj09hpaj+siSbac8vdm6+DLKOxYW924YNnJNkn/h927G9sLAs34xTgae4sT1tVCskHn34/fvRVj6LuNUyXAC8pwejEy4H+o9bH8uIV4Wac10Vx9vPAwHGPEhSbG1k4dTY08hStvsri1Vpp3qFDR8xKnHjNNOrtoQP9cjBOz6z2yp0ftaXfhJtxlmXUSss/fdTODyKHrBZajH3Jx6k0tVzx5mfV/B/3dOiYWb7I6O4BK5lra/9cFi5HfvfiaccHrUalkrlKsdkbGm6H/P/wePv6ko+Rnlpxzm70qkObjV0h6ZHUWUpH9MJN4Vr22Z603DSVQOI4fdV26JG2Ylx0/KV6JVt12hbtPIsmoxIcUNQBdWhqU6UUSZ2jZILyD+FOetrL9cKfVORA/+DUG3auFD3ywrYspzyLIlejcpdKNTejBOP+2Dg1hg6cdq8sT++vGvrq0vUP7fOdL3yITto99q3m0laFDlLCtTCzRJNC/3wgccz6JMles9XopR+dtK1Ky6jZjaPnP+58Z+Gbd8T9jfPMorPh1oFuF3QbYVVaTa3V0LZa9zxIUwqiDk9ZdbqxEa7FYWZRfhAZOy/a8eWJyt3rG9lf6IJFkgO+yAhFaDvD1LK/7j20FeD9sSPh0WeoYjXaJ0034iDLXmXe0AHK3ansfsc09LXOr90R4JNn3hNdKC9835lwuA4HWYX0pUY5Exl73uMNOfahuJWf+ZTivegZo76+9vdlSuKFm5G6/gudJAcHT9BtFF3y0RZGl1l0A9G+I86nteUbNLU63/VFD8cnX9kxgGkahl5qanm9OFsr3XoArpUl/GVf7+DXHQaQxQCyGEAWg38BAAD////s03YAAAAGSURBVAMAlF1s4mdoB4EAAAAASUVORK5CYII="
                 const view = window.cm_instances[window.cm_instances.length - 1];
                 if (!view) return;
 
@@ -1973,8 +1987,9 @@ function RightToolbar(toolbar, CM) {
                             <span class="sm_settings_label">에디터 테마</span>
                             <div class="sm_settings_value">
                                 <select id="sm-editor-theme-select" class="sm_settings_select">
-                                    <option value="light" ${!document.body.classList.contains('dark') ? 'selected' : ''}>라이트</option>
+                                    <option value="light" ${!document.body.classList.contains('dark') && !document.body.classList.contains('seven_mark') && !document.body.classList.contains('custom') ? 'selected' : ''}>라이트</option>
                                     <option value="dark" ${document.body.classList.contains('dark') ? 'selected' : ''}>다크</option>
+                                    <option value="seven_mark" ${document.body.classList.contains('seven_mark') ? 'selected' : ''}>세븐마크</option>
                                     <option value="custom" ${document.body.classList.contains('custom') ? 'selected' : ''}>사용자 지정</option>
                                 </select>
                             </div>

@@ -1,16 +1,38 @@
-use serde::Serialize;
-use sevenmark_html::RenderConfig;
+use serde::{Deserialize, Serialize};
 use sevenmark_utils::convert_ast_to_utf16_offset_json;
 use wasm_bindgen::prelude::*;
 use web_sys::console;
 
 mod editor;
 
+// JS로부터 설정을 전달받기 위한 미러(Mirror) 구조체
+// serde::Deserialize를 통해 JS 객체에서 Rust 구조체로 자동 변환 가능
 #[wasm_bindgen]
-pub fn sm_renderer(raw: &str) -> String {
+#[derive(Deserialize, Default)]
+#[serde(default)] // JS에서 일부 필드가 누락되어도 기본값으로 채움
+pub struct SBRenderConfig {
+    file_base_url: Option<String>,
+    document_base_url: Option<String>,
+    category_base_url: Option<String>,
+    edit_url: Option<String>,
+}
+#[wasm_bindgen]
+pub fn sm_renderer(raw: &str, config: JsValue) -> Result<String, JsValue> {
+    // config 값을 바탕으로 RenderConfig 생성
+    let wasm_config: Option<SBRenderConfig> = if config.is_undefined() || config.is_null() {
+        None
+    } else {
+        Some(serde_wasm_bindgen::from_value(config)?)
+    };
+    let sm_config = wasm_config.as_ref().map(|config| sevenmark_html::RenderConfig {
+        file_base_url: config.file_base_url.as_deref(),
+        document_base_url: config.document_base_url.as_deref(),
+        category_base_url: config.category_base_url.as_deref(),
+        edit_url: config.edit_url.as_deref(),
+    }).unwrap_or_default();
     let doc = sevenmark_parser::core::parse_document(&raw);
-    let html = sevenmark_html::render_document_with_spans(&doc, &RenderConfig::default(), raw);
-    html
+    let html = sevenmark_html::render_document_with_spans(&doc, &sm_config, raw);
+    Ok(html)
 }
 
 #[wasm_bindgen]
