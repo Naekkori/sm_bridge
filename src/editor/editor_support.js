@@ -1866,7 +1866,7 @@ function setup_toolbar(CM) {
             width: "100%",
             border: "none",
             background: "var(--sm-color-header, #3392FF)",
-            color: "var(--sm-color-text, #fff)",
+            color: "var(--sm-color-text-secondary, #fff)",
             padding: "8px",
             borderRadius: "4px",
             cursor: "pointer",
