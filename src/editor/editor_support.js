@@ -280,7 +280,7 @@ body.dark {
 .cm-textfield:focus { border-color: var(--sm-btn-active-bg); box-shadow: 0 0 0 2px var(--sm-shadow-toolbar); }
 .cm-textfield[name="replace"] { margin-top: 4px; }
 .cm-panel.cm-search .cm-button { background: transparent; color: var(--sm-btn-text); border: 1px solid var(--sm-border-toolbar); border-radius: 4px; height: 30px; padding: 0 12px; cursor: pointer; font-size: 0.85em; font-weight: 500; display: inline-flex; align-items: center; justify-content: center; text-transform: none; white-space: nowrap; transition: all 0.1s ease; background-image: none; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-.cm-panel.cm-search .cm-button:hover { background-color: var(--sm-btn-hover-bg); color: var(--sm-color-text); border-color: var(--sm-btn-hover-border); }
+.cm-panel.cm-search .cm-button:hover { background-color: var(--sm-btn-hover-bg); color: var(--sm-icon-hover-color); border-color: var(--sm-btn-hover-border); }
 .cm-panel.cm-search .cm-button:active { background-color: var(--sm-btn-active-bg); transform: translateY(1px); }
 .cm-panel.cm-search .cm-button[name="close"] { position: absolute; top: 10px; right: 8px; width: 28px !important; height: 28px !important; padding: 0; background-color: transparent; border: none; color: var(--sm-color-error); border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 20; font-size: 1.4em; box-shadow: none; }
 .cm-panel.cm-search .cm-button[name="close"]:hover { background-color: var(--sm-bg-error); color: #fff; }
@@ -808,6 +808,13 @@ const THEME_CONFIG = [
         default: "#e1e4e8",
         label: "btn-background",
         inputId: "#sm-editor-btn-bg-color"
+    },
+    {
+        var: "--sm-icon-hover-color",
+        key: "sm-editor-custom-icon-hover-color",
+        default: "#000",
+        label: "icon-hover-color",
+        inputId: "#sm-editor-icon-hover-color"
     }
 ];
 
@@ -2060,6 +2067,14 @@ function RightToolbar(toolbar, CM) {
                                 </div>
                             </div>
                             <div class="sm_settings_row" style="margin-bottom: 0;">
+                                <span class="sm_settings_label">버튼 아이콘 호버색상</span>
+                                <div class="sm_settings_value">
+                                    <input type="color" id="sm-editor-icon-hover-color" class="sm_settings_color"
+                                         style="cursor: pointer; border: none; background: transparent; width: 42px; height: 32px;"
+                                         value="${getComputedStyle(document.body).getPropertyValue('--sm-icon-hover-color').trim()}">
+                                </div>   
+                            </div>
+                            <div class="sm_settings_row" style="margin-bottom: 0;">
                                 <span class="sm_settings_label">배경 색상</span>
                                 <div class="sm_settings_value">
                                     <input type="color" id="sm-editor-bg-color" class="sm_settings_color"
@@ -2091,6 +2106,7 @@ function RightToolbar(toolbar, CM) {
                     const colorBg = modal.querySelector("#sm-editor-bg-color");
                     const colorBtn = modal.querySelector("#sm-editor-btn-color");
                     const colorBtnBg = modal.querySelector("#sm-editor-btn-bg-color");
+                    const colorBtnHover = modal.querySelector("#sm-editor-icon-hover-color");
                     const colorTextSecondary = modal.querySelector("#sm-editor-text-secondary-color");
                     const themeResetBtn = modal.querySelector("#sm-theme-reset-btn");
                     const themeSaveBtn = modal.querySelector("#sm-theme-save-btn");
@@ -2137,6 +2153,11 @@ function RightToolbar(toolbar, CM) {
                         const color = e.target.value;
                         document.body.style.setProperty("--sm-btn-hover-bg", color);
                         localStorage.setItem("sm-editor-custom-btn-bg", color);
+                    });
+                    colorBtnHover.addEventListener("input", (e) => {
+                        const color = e.target.value;
+                        document.body.style.setProperty("--sm-icon-hover-color", color);
+                        localStorage.setItem("sm-editor-custom-icon-hover-color", color);
                     });
                     colorTextSecondary.addEventListener("input", (e) => {
                         const color = e.target.value;
