@@ -282,8 +282,8 @@ body.dark {
 .cm-panel.cm-search .cm-button { background: transparent; color: var(--sm-btn-text); border: 1px solid var(--sm-border-toolbar); border-radius: 4px; height: 30px; padding: 0 12px; cursor: pointer; font-size: 0.85em; font-weight: 500; display: inline-flex; align-items: center; justify-content: center; text-transform: none; white-space: nowrap; transition: all 0.1s ease; background-image: none; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
 .cm-panel.cm-search .cm-button:hover { background-color: var(--sm-btn-hover-bg); color: var(--sm-icon-hover-color); border-color: var(--sm-btn-hover-border); }
 .cm-panel.cm-search .cm-button:active { background-color: var(--sm-btn-active-bg); transform: translateY(1px); }
-.cm-panel.cm-search .cm-button[name="close"] { position: absolute; top: 10px; right: 8px; width: 28px !important; height: 28px !important; padding: 0; background-color: transparent; border: none; color: var(--sm-color-error); border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 20; font-size: 1.4em; box-shadow: none; }
-.cm-panel.cm-search .cm-button[name="close"]:hover { background-color: var(--sm-bg-error); color: #fff; }
+.cm-editor .cm-panel.cm-search [name="close"] { position: absolute; top: 10px !important; right: 8px !important; width: 28px !important; height: 28px !important; font-size: 20pt !important; padding: 0 !important; background-color: transparent !important; border: none !important; color: var(--sm-color-error) !important; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 20; box-shadow: none; }
+.cm-editor .cm-panel.cm-search [name="close"]:hover { background-color: var(--sm-bg-error) !important; color: #fff !important; }
 body.dark .cm-panel.cm-search .cm-button[name="close"] { color: #fff; }
 .cm-panel.cm-search label { display: inline-flex; align-items: center; gap: 4px; font-size: 0.85em; color: var(--sm-color-text); margin: 0; cursor: pointer; user-select: none; }
 .cm-panel.cm-search input[type="checkbox"] { accent-color: var(--sm-color-header); cursor: pointer; }
@@ -1285,7 +1285,14 @@ function setup_toolbar(CM) {
                     const styleStr = styleMatch[1];
 
                     const colorMatch = styleStr.match(/color:\s*([^;"]+)/);
-                    if (colorMatch) result.color = colorMatch[1].trim();
+                    if (colorMatch) {
+                        let colorVal = colorMatch[1].trim();
+                        const argbMatch = colorVal.match(/^rgba\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)$/);
+                        if (argbMatch) {
+                            colorVal = `rgba(${argbMatch[1]}, ${argbMatch[2]}, ${argbMatch[3]}, ${argbMatch[4]})`;
+                        }
+                        result.color = colorVal;
+                    }
 
                     const sizeMatch = styleStr.match(/font-size:\s*(\d+)px/);
                     if (sizeMatch) result.size = parseInt(sizeMatch[1]);
@@ -1769,6 +1776,7 @@ function setup_toolbar(CM) {
                     const colorInput = document.createElement("input");
                     colorInput.type = "color";
                     colorInput.value = initialHex;
+                    colorInput.className = "sm_settings_range";
                     Object.assign(colorInput.style, {
                         border: "none",
                         padding: "0",
