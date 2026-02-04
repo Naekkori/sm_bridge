@@ -3006,8 +3006,6 @@ function openTableEditorModal() {
 
     function findNodeByType(nodes, from, to, targetType) {
         if (!nodes) return null;
-        let bestMatch = null;
-
         for (const node of nodes) {
             const type = Object.keys(node)[0];
             const data = node[type];
