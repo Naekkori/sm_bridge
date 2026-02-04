@@ -1261,6 +1261,7 @@ if (typeof window !== 'undefined') {
     window.set_editor_text = set_editor_text;
 }
 
+
 function setup_toolbar(CM) {
     const parent = document.getElementById("sm-editor-raw");
     if (!parent || document.getElementById("sm-toolbar")) return;
@@ -1719,6 +1720,14 @@ function setup_toolbar(CM) {
                     view.focus();
                 }
             }
+        },
+        {
+            id: "sm-toolbar-image",
+            astType: "Media",
+            className: "sm_toolbar_btn",
+            text: "image",
+            title: "이미지 삽입",
+            onClick: () => attachImageModal()
         }
     ];
     Buttons.forEach((button) => {
@@ -2599,7 +2608,7 @@ function makingTableModal() {
             <div id="tab-file" class="sm_modal_tab_content">
                 <div style="margin-bottom: 20px;">
                     <div id="file-drop-zone" style="border: 2px dashed var(--sm-border-editor); border-radius: 8px; padding: 25px; text-align: center; background: var(--sm-bg-editor); cursor: pointer; transition: all 0.2s;" onclick="document.getElementById('table-file-input').click()">
-                        <span class="material-symbols-rounded" style="font-size: 32px; opacity: 0.5; margin-bottom: 8px; display: block;">upload_file</span>
+                        <span class="material-symbols-outlined" style="font-size: 32px; opacity: 0.5; margin-bottom: 8px; display: block;">upload_file</span>
                         <p style="opacity: 0.7; font-size: 0.9rem; margin-bottom: 5px;">CSV 또는 엑셀 파일을 선택하세요.</p>
                         <p id="file-name-display" style="font-size: 0.8rem; color: var(--sm-color-header); font-weight: bold;"></p>
                     </div>
@@ -3607,9 +3616,173 @@ function openTableEditorModal() {
     }, true);
 }
 
+function attachImageModal() {
+    const htmlContent = `
+        <h3>이미지 첨부</h3>
+        <div id="sm_image_preview">
+            <!-- 이미지 미리보기 -->
+        </div>
+        <div id="upload-area" style="margin-bottom: 20px;">
+            <div id="file-drop-zone" style="border: 2px dashed var(--sm-border-editor); border-radius: 8px; padding: 25px; text-align: center; background: var(--sm-bg-editor); cursor: pointer; transition: all 0.2s;" onclick="document.getElementById('image-file-input').click()">
+                <span class="material-symbols-outlined">image_arrow_up</span>
+                <p style="opacity: 0.7; font-size: 0.9rem; margin-bottom: 5px;">업로드 할 이미지 선택</p>
+                <p id="file-name-display" style="font-size: 0.8rem; color: var(--sm-color-header); font-weight: bold;"></p>
+            </div>
+           <input type="file" id="image-file-input" accept="image/*" style="display: none;">
+        </div>
+        <button id="image-upload-btn" class="sm_modal_create_btn" style="width: 100%; font-weight: bold; height: 50px; font-size: 1rem;">업로드</button>
+    `;
+    createModal(htmlContent, (modal) => {
+        const DnDZone = modal.querySelector("#file-drop-zone");
+        const fileInput = modal.querySelector("#image-file-input");
+        const fileNameDisplay = modal.querySelector("#file-name-display");
+        const previewContainer = modal.querySelector("#sm_image_preview");
+        const imageUploadBtn = modal.querySelector("#image-upload-btn");
+        // 처음에는 비활성 시킴
+        imageUploadBtn.disabled = true;
+        // 파일 처리 공통 함수
+        const handleFile = (file) => {
+            if (!file) return;
+
+            // 이미지 타입 확인
+            if (!file.type.startsWith("image/")) {
+                alert("이미지 파일만 업로드 가능합니다.");
+                return;
+            }
+
+            fileNameDisplay.textContent = file.name;
+
+            // 미리보기 생성
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewContainer.innerHTML = "";
+                const img = document.createElement("img");
+                img.src = e.target.result;
+                img.style.maxWidth = "100%";
+                img.style.maxHeight = "300px";
+                img.style.objectFit = "contain";
+                img.style.borderRadius = "4px";
+                img.style.border = "1px solid var(--sm-border-editor)";
+                previewContainer.appendChild(img);
+            };
+            reader.readAsDataURL(file);
+            //업로드 준비되면 버튼 활성
+            imageUploadBtn.disabled = false;
+            //실제로 업로드 하는곳
+            imageUploadBtn.addEventListener("click", () => {
+                //필수옵션확인
+                if (window.set_upload_path === undefined || window.set_upload_path === null || window.set_upload_path === "") {
+                    const err = "업로드 경로 가 없습니다, 관리자 에게 문의하세요.";
+                    console.error(err);
+                    alert(err);
+                } else {
+                    uploadImageAndProgress(file, window.set_upload_path);
+                }
+            });
+        };
+
+        // 드래그 오버: 스타일 강조
+        DnDZone.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            DnDZone.style.borderColor = "var(--sm-color-header)";
+            DnDZone.style.backgroundColor = "var(--sm-btn-hover-bg)";
+        });
+
+        // 드래그 리브: 스타일 복구
+        DnDZone.addEventListener("dragleave", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            DnDZone.style.borderColor = "var(--sm-border-editor)";
+            DnDZone.style.backgroundColor = "var(--sm-bg-editor)";
+        });
+
+        // 드롭: 파일 처리
+        DnDZone.addEventListener("drop", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            DnDZone.style.borderColor = "var(--sm-border-editor)";
+            DnDZone.style.backgroundColor = "var(--sm-bg-editor)";
+
+            if (e.dataTransfer && e.dataTransfer.files.length > 0) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        // 클릭 업로드 (input change) 처리
+        fileInput.addEventListener("change", (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+    });
+}
+
+function uploadImageAndProgress(file, serverPath) {
+    try {
+        const uploadArea = document.getElementById("upload-area");
+        const xhr = new XMLHttpRequest();
+        const fromData = new FormData();
+        fromData.append("image", file);
+        uploadArea.innerHTML = ""; //비우기
+
+        const createProgressDiv = document.createElement("div");
+        createProgressDiv.style = "border: 2px dashed var(--sm-border-editor); border-radius: 8px; padding: 25px; text-align: center; background: var(--sm-bg-editor); display: flex; flex-direction: column; align-items: center; justify-content: center;";
+
+        const progressWrapper = document.createElement("div");
+        progressWrapper.style = "position: relative; width: 100px; height: 100px;";
+
+        progressWrapper.innerHTML = `
+            <svg viewBox="0 0 36 36" style="width: 100%; height: 100%; transform: rotate(-90deg);">
+                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      fill="none" stroke="var(--sm-border-editor)" stroke-width="3" />
+                <path id="progress-circle" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      fill="none" stroke="#3b82f6" stroke-width="3" stroke-dasharray="100, 100" stroke-dashoffset="100" 
+                      style="transition: stroke-dashoffset 0.3s ease;" />
+            </svg>
+            <div id="progress-text" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: bold; font-size: 1.2rem; color: var(--sm-text-editor);">0%</div>
+        `;
+
+        createProgressDiv.appendChild(progressWrapper);
+        uploadArea.appendChild(createProgressDiv);
+
+        const circle = document.getElementById("progress-circle");
+        const text = document.getElementById("progress-text");
+
+        xhr.upload.addEventListener("progress", (event) => {
+            if (event.lengthComputable) {
+                const percent = Math.round((event.loaded / event.total) * 100);
+                circle.style.strokeDashoffset = 100 - percent;
+                text.innerText = `${percent}%`;
+            }
+        });
+
+        xhr.onload = () => {
+            if (xhr.status === 200) {
+                text.innerText = "완료";
+                text.style.color = "#10b981";
+            } else {
+                text.innerText = "오류";
+                text.style.color = "#ef4444";
+            }
+        };
+
+        xhr.onerror = () => {
+            text.innerText = "오류";
+            text.style.color = "#ef4444";
+        };
+
+        xhr.open("POST", serverPath);
+        xhr.send(fromData);
+    } catch (e) {
+        console.error("업로드 중 오류 발생:", e);
+    }
+}
+
 if (typeof window !== 'undefined') {
     window.openTableEditorModal = openTableEditorModal;
     window.makingTableModal = makingTableModal;
+    window.attachImageModal = attachImageModal;
     // 전역에 등록하여 ReferenceError 방지
     window.init_codemirror = init_codemirror;
 }
