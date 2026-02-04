@@ -3685,6 +3685,7 @@ function attachImageModal() {
                         wrapSelection(`[[#url="${window.set_cdn_path}${file.name}" ${file.name}]]`);
                     }
                 }
+                modal.remove();
             });
         };
 
