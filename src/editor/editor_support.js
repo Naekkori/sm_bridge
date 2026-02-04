@@ -1,4 +1,5 @@
 // Worker 환경 등에서 잘못 로드되었을 때 에러 방지
+
 const isBrowser = typeof window !== 'undefined';
 
 if (isBrowser) {
@@ -3647,9 +3648,11 @@ function attachImageModal() {
                 alert("이미지 파일만 업로드 가능합니다.");
                 return;
             }
-
+            previewContainer.style.display = "flex";
+            previewContainer.style.justifyContent = "center";
+            previewContainer.style.alignItems = "center";
+            previewContainer.style.margin = "5rem";
             fileNameDisplay.textContent = file.name;
-
             // 미리보기 생성
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -3669,12 +3672,18 @@ function attachImageModal() {
             //실제로 업로드 하는곳
             imageUploadBtn.addEventListener("click", () => {
                 //필수옵션확인
-                if (window.set_upload_path === undefined || window.set_upload_path === null || window.set_upload_path === "") {
-                    const err = "업로드 경로 가 없습니다, 관리자 에게 문의하세요.";
+                let required = window.set_upload_path === undefined || window.set_upload_path === null || window.set_upload_path === "" ||
+                    window.set_cdn_path === undefined || window.set_cdn_path === null || window.set_cdn_path === ""
+                if (required) {
+                    const err = "업로드 경로 가 없습니다, 관리자 에게 문의하세요.\n필요한 인수: window.set_upload_path, window.set_cdn_path";
                     console.error(err);
                     alert(err);
                 } else {
-                    uploadImageAndProgress(file, window.set_upload_path);
+                    let result = uploadImageAndProgress(file, window.set_upload_path);
+                    //업로드 성공하면 첨부
+                    if (result) {
+                        wrapSelection(`[[#url="${window.set_cdn_path}${file.name}" ${file.name}]]`);
+                    }
                 }
             });
         };
@@ -3717,6 +3726,8 @@ function attachImageModal() {
 }
 
 function uploadImageAndProgress(file, serverPath) {
+    if (!file) return;
+    var is_success = false;
     try {
         const uploadArea = document.getElementById("upload-area");
         const xhr = new XMLHttpRequest();
@@ -3759,22 +3770,27 @@ function uploadImageAndProgress(file, serverPath) {
             if (xhr.status === 200) {
                 text.innerText = "완료";
                 text.style.color = "#10b981";
+                is_success = true;
             } else {
-                text.innerText = "오류";
+                text.innerText = `오류가 발생했습니다 ${xhr.status}`;
                 text.style.color = "#ef4444";
+                is_success = false;
             }
         };
 
         xhr.onerror = () => {
             text.innerText = "오류";
             text.style.color = "#ef4444";
+            is_success = false;
         };
 
         xhr.open("POST", serverPath);
         xhr.send(fromData);
     } catch (e) {
+        is_success = false;
         console.error("업로드 중 오류 발생:", e);
     }
+    return is_success;
 }
 
 if (typeof window !== 'undefined') {
