@@ -15,7 +15,7 @@ Rust의 강력한 성능과 안전성을 바탕으로, 웹 브라우저에서도
 
 ### 차세대 에디터 통합 (Next-Gen Editor Integration)
 
-- **CodeMirror 지원**: AST(구문 트리)를 CodeMirror가 이해할 수 있는 포맷으로 실시간 변환하여, 강력한 **신택스 하이라이팅(Syntax Highlighting)** 및 **구문 분석**
+- **CodeMirror 지원**: AST(구문 트리)를 CodeMirror가 이해할 수 있는 포맷으로 실시간 변환하여, **신택스 하이라이팅(Syntax Highlighting)** 및 **구문 분석**
   기능을 제공합니다.
 - **스마트 인젝션**: `sm_editor_injecter`를 통해 기존 웹 페이지의 DOM 요소에 즉시 에디터를 주입(Inject)하여 사용할 수 있습니다.
 
