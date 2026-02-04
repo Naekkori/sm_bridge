@@ -1,4 +1,4 @@
-# SM Bridge
+# ![Logo](./SBLogo.png) SM Bridge
 
 **SM Bridge**는 강력한 **SevenMark** 마크다운 엔진을 웹 환경에서 사용할 수 있도록 연결하는 현대적인 **WebAssembly (WASM)** 브릿지입니다.
 <br>
