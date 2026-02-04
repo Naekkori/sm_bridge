@@ -1635,7 +1635,8 @@ function setup_toolbar(CM) {
             title: "링크",
             type: "paramList",
             params: [
-                {name: "url", label: "링크 주소", type: "text", default: "http://"}
+                {name: "url", label: "링크 주소", type: "text", default: "http://"},
+                {name: "desc", label: "링크 설명", type: "text", default: ""}
             ],
             getInitialValues: view => {
                 const {state} = view;
@@ -1655,6 +1656,7 @@ function setup_toolbar(CM) {
                     // parameters가 없을 경우를 대비한 안전한 접근
                     const params = targetNode.parameters || {};
                     let url = null;
+                    let desc = "";
                     if (params.url && params.url.value && params.url.value.length > 0) {
                         const firstVal = params.url.value[0];
                         if (firstVal.Text && firstVal.Text.value) {
@@ -1664,15 +1666,22 @@ function setup_toolbar(CM) {
                         }
                     }
 
+                    if (targetNode.children && targetNode.children.length > 0) {
+                        const firstChild = targetNode.children[0];
+                        const lastChild = targetNode.children[targetNode.children.length - 1];
+                        const getSpan = (n) => n[Object.keys(n)[0]].span;
+                        desc = raw.slice(getSpan(firstChild).start, getSpan(lastChild).end);
+                    }
+
                     console.log("Link Debug - Found URL:", url);
-                    return url ? {url} : null;
+                    return url ? {url, desc} : null;
                 } catch (e) {
                     console.error("Link Debug - Error:", e);
                     return null;
                 }
             },
             onApply: values => {
-                const {url} = values;
+                const {url, desc} = values;
                 const view = window.cm_instances?.[window.cm_instances.length - 1];
                 if (view) {
                     const {state} = view;
@@ -1681,7 +1690,7 @@ function setup_toolbar(CM) {
                     // AST를 사용하여 현재 위치를 감싸는 가장 안쪽의 Media 노드 찾기
                     const ast = JSON.parse(window.cm_highlighter(text));
                     const targetNode = findNodeByType(ast, from, to, "Media");
-                    const makeTag = (urlValue) => `[[#url="${urlValue}"]]`;
+                    const makeTag = (urlValue, desc) => `[[#url="${urlValue}"${desc.length === 0 ? '' : ` ${desc}`}]]`;
                     if (targetNode) {
                         const start = targetNode.span.start;
                         const end = targetNode.span.end;
@@ -1690,7 +1699,7 @@ function setup_toolbar(CM) {
                                 changes: {
                                     from: start,
                                     to: end,
-                                    insert: makeTag(url)
+                                    insert: makeTag(url, desc)
                                 }
                             }
                         );
@@ -1701,9 +1710,9 @@ function setup_toolbar(CM) {
                                 changes: {
                                     from: from,
                                     to: to,
-                                    insert: makeTag(url)
+                                    insert: makeTag(url, desc)
                                 },
-                                selection: {anchor: from + makeTag(url).length + (from === to ? 0 : selectedText.length)}
+                                selection: {anchor: from + makeTag(url, desc).length + (from === to ? 0 : selectedText.length)}
                             }
                         );
                     }
@@ -1772,6 +1781,21 @@ function setup_toolbar(CM) {
                 if (d !== container) d.classList.remove("show");
             });
             container.classList.toggle("show");
+
+            // [Fix] overflow:hidden 영역 밖으로 나갈 때 잘림 방지 (Fixed Positioning)
+            if (container.classList.contains("show")) {
+                const rect = btn.getBoundingClientRect();
+                content.style.position = "fixed";
+                content.style.top = (rect.bottom + 4) + "px";
+                content.style.left = rect.left + "px";
+                content.style.zIndex = "10005";
+
+                // 화면 오른쪽 넘어가는지 체크
+                const contentRect = content.getBoundingClientRect();
+                if (contentRect.right > window.innerWidth) {
+                    content.style.left = (window.innerWidth - contentRect.width - 10) + "px";
+                }
+            }
         });
 
         container.appendChild(btn);
@@ -1986,6 +2010,19 @@ function setup_toolbar(CM) {
 
             if (!isOpen) {
                 container.classList.add("show");
+
+                // [Fix] overflow:hidden 영역 밖으로 나갈 때 잘림 방지 (Fixed Positioning)
+                const rect = btn.getBoundingClientRect();
+                content.style.position = "fixed";
+                content.style.top = (rect.bottom + 4) + "px";
+                content.style.left = rect.left + "px";
+                content.style.zIndex = "10005";
+
+                // 화면 오른쪽 넘어가는지 체크
+                const contentRect = content.getBoundingClientRect();
+                if (contentRect.right > window.innerWidth) {
+                    content.style.left = (window.innerWidth - contentRect.width - 10) + "px";
+                }
             }
 
             const view = window.cm_instances?.[window.cm_instances.length - 1];
