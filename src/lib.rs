@@ -7,14 +7,13 @@ mod editor;
 
 // JS로부터 설정을 전달받기 위한 미러(Mirror) 구조체
 // serde::Deserialize를 통해 JS 객체에서 Rust 구조체로 자동 변환 가능
-#[wasm_bindgen]
 #[derive(Deserialize, Default)]
 #[serde(default)] // JS에서 일부 필드가 누락되어도 기본값으로 채움
 pub struct SBRenderConfig {
-    file_base_url: Option<String>,
-    document_base_url: Option<String>,
-    category_base_url: Option<String>,
-    edit_url: Option<String>,
+    pub file_base_url: Option<String>,
+    pub document_base_url: Option<String>,
+    pub category_base_url: Option<String>,
+    pub edit_url: Option<String>,
 }
 #[wasm_bindgen]
 pub fn sm_renderer(raw: &str, config: JsValue) -> Result<String, JsValue> {
