@@ -3672,17 +3672,16 @@ function attachImageModal() {
             //실제로 업로드 하는곳
             imageUploadBtn.addEventListener("click", () => {
                 //필수옵션확인
-                let required = window.set_upload_path === undefined || window.set_upload_path === null || window.set_upload_path === "" ||
-                    window.set_cdn_path === undefined || window.set_cdn_path === null || window.set_cdn_path === ""
+                let required = window.set_upload_path === undefined || window.set_upload_path === null || window.set_upload_path === "";
                 if (required) {
-                    const err = "업로드 경로 가 없습니다, 관리자 에게 문의하세요.\n필요한 인수: window.set_upload_path, window.set_cdn_path";
+                    const err = "업로드 경로 가 없습니다, 관리자 에게 문의하세요.\n필요한 인수: window.set_upload_path";
                     console.error(err);
                     alert(err);
                 } else {
                     let result = uploadImageAndProgress(file, window.set_upload_path);
                     //업로드 성공하면 첨부
                     if (result) {
-                        wrapSelection(`[[#url="${window.set_cdn_path}${file.name}" ${file.name}]]`);
+                        wrapSelection(`[[#file="${file.name}" ${file.name}]]`);
                     }
                 }
                 modal.remove();
