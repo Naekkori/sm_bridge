@@ -7,9 +7,9 @@ license = "MIT"
 authors = ["Naekkori"]
 
 [dependencies]
-sevenmark-parser = { version = "2.20.5", features = ["include_locations"] }
-sevenmark-html = "2.20.5"
-sevenmark-utils = "2.20.5"
+sevenmark-parser = { version = "2.21.4", features = ["include_locations"] }
+sevenmark-html = { version = "2.21.4" }
+sevenmark-utils = "2.21.4"
 wasm-bindgen = "0.2.108"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"

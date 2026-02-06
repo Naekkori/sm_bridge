@@ -1,4 +1,7 @@
 use serde::{Deserialize, Serialize};
+use sevenmark_parser::ast::{
+    Element, ResolvedDoc, ResolvedFile, ResolvedMediaInfo
+};
 use sevenmark_utils::convert_ast_to_utf16_offset_json;
 use wasm_bindgen::prelude::*;
 use web_sys::console;
@@ -9,7 +12,7 @@ mod editor;
 // serde::Deserialize를 통해 JS 객체에서 Rust 구조체로 자동 변환 가능
 #[derive(Deserialize, Default)]
 #[serde(default)] // JS에서 일부 필드가 누락되어도 기본값으로 채움
-pub struct SBRenderConfig {
+pub struct SBRenderConfig{
     pub file_base_url: Option<String>,
     pub document_base_url: Option<String>,
     pub category_base_url: Option<String>,
@@ -33,11 +36,65 @@ pub fn sm_renderer(raw: &str, config: JsValue) -> Result<String, JsValue> {
         })
         .unwrap_or_default();
     // parse_document는 항상 Vec<Element>를 반환하며, 에러는 Element::Error로 포함됩니다.
-    let elements = sevenmark_parser::core::parse_document(&raw);
+    let mut elements = sevenmark_parser::core::parse_document(&raw);
+    for element in &mut elements{
+        resolve_media_recursive(element);
+    }
     let html = sevenmark_html::render_document_with_spans(&elements, &sm_config, &raw);
     Ok(html)
 }
 
+//미디어 정보 주입 (아마도 이거 세븐위키전용 이라서 빠진건지 모르겠지만 직접 주입해서 미디어 기능살림.)
+fn resolve_media_recursive(element: &mut Element){
+    match element {
+        Element::Media(media) => {
+            let mut  file_url:Option<String> = None;
+            let mut doc_title:Option<String> = None;
+            let mut category_title:Option<String> = None;
+            let mut ext_url:Option<String> = None;
+
+            for (key,param) in media.parameters.iter(){
+                let value_str = param.value.iter()
+                .filter_map(|e| match e {
+                    Element::Text(t)=>Some(t.value.clone()),
+                    _ => None
+                }).collect::<String>();
+               match key.as_str() {
+                   "file"=> file_url = Some(value_str),
+                   "document"=> doc_title = Some(value_str),
+                   "category"=> category_title = Some(value_str),
+                   "url"=> ext_url = Some(value_str),
+                   _ => {}
+               }
+            };
+            let info =  ResolvedMediaInfo {
+                file: file_url.map(|url|
+                    ResolvedFile {
+                        url,
+                        is_valid: true,
+                        width: None,
+                        height: None,
+                    }
+                ),
+                document: doc_title.map(|title| ResolvedDoc{
+                    title,
+                    is_valid: true,
+                }),
+                category: category_title.map(|title| ResolvedDoc{
+                    title,
+                    is_valid: true,
+                }),
+                url: ext_url,
+            };
+
+            media.resolved_info = Some(info);
+            for child in &mut media.children{
+                resolve_media_recursive(child);
+            }
+        },
+        _ => (), //쌩까기
+    }
+}
 #[wasm_bindgen]
 pub fn sm_codemirror_doc(raw: &str) -> String {
     let doc = sevenmark_parser::core::parse_document(&raw);
